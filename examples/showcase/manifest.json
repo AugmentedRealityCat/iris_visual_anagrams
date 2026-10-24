@@ -1,0 +1,170 @@
+{
+  "model": "Aikimi/iris-3b-int8",
+  "adapter": "pentacoxian-dev/iris-3b-turbo-lora:r2-1000",
+  "model_revision": "6231647d02bb538b401a675061c11c7a64bba81f",
+  "adapter_revision": "fe16b3496eb440585993c92d95641c08c6b08263",
+  "steps": 4,
+  "guidance": 1,
+  "shift": 4,
+  "resolution": [
+    1024,
+    1024
+  ],
+  "candidates_per_case": 2,
+  "examples": [
+    {
+      "id": "inner-circle",
+      "method": "Inner-circle rotation",
+      "style": "an ornate art nouveau illustration of",
+      "prompts": [
+        "an owl surrounded by leaves",
+        "a woman's face surrounded by flowers"
+      ],
+      "views": [
+        "identity",
+        "inner_circle"
+      ],
+      "seed": 56,
+      "selected_seed": 57,
+      "view_seed": 56,
+      "style_label": "Art nouveau"
+    },
+    {
+      "id": "upside-down",
+      "method": "180-degree rotation",
+      "style": "a soft watercolor painting of",
+      "prompts": [
+        "a vase of golden sunflowers",
+        "a wise old man's face"
+      ],
+      "views": [
+        "identity",
+        "rotate_180"
+      ],
+      "seed": 23,
+      "selected_seed": 24,
+      "view_seed": 23,
+      "style_label": "Watercolor"
+    },
+    {
+      "id": "quarter-turn",
+      "method": "90-degree rotation",
+      "style": "an expressive oil painting of",
+      "prompts": [
+        "a winding river through an autumn forest",
+        "a red fox"
+      ],
+      "views": [
+        "identity",
+        "rotate_cw"
+      ],
+      "seed": 12,
+      "selected_seed": 13,
+      "view_seed": 12,
+      "style_label": "Oil painting"
+    },
+    {
+      "id": "vertical-flip",
+      "method": "Vertical flip",
+      "style": "a dramatic charcoal drawing of",
+      "prompts": [
+        "a dense pine forest beside a lake",
+        "a wolf's face"
+      ],
+      "views": [
+        "identity",
+        "flip"
+      ],
+      "seed": 34,
+      "selected_seed": 34,
+      "view_seed": 34,
+      "style_label": "Charcoal"
+    },
+    {
+      "id": "color-inversion-engraving",
+      "method": "Color inversion",
+      "style": "an antique copperplate engraving of",
+      "prompts": [
+        "a human skull",
+        "a Victorian woman wearing a hat"
+      ],
+      "views": [
+        "identity",
+        "negate"
+      ],
+      "seed": 81,
+      "selected_seed": 82,
+      "view_seed": 81,
+      "style_label": "Copperplate engraving"
+    },
+    {
+      "id": "patch-shuffle",
+      "method": "Patch permutation",
+      "style": "a detailed pencil sketch of",
+      "prompts": [
+        "an elephant",
+        "a rabbit"
+      ],
+      "views": [
+        "identity",
+        "patch_permute"
+      ],
+      "view_args": [
+        "0",
+        "4"
+      ],
+      "seed": 67,
+      "selected_seed": 67,
+      "view_seed": 67,
+      "style_label": "Pencil sketch"
+    }
+  ],
+  "video": {
+    "file": "reddit-showcase.mp4",
+    "fps": 30,
+    "size": [
+      1080,
+      1080
+    ],
+    "duration_seconds": 75.0,
+    "audio": false,
+    "chapters": [
+      {
+        "method": "Inner-circle rotation",
+        "style": "Art nouveau",
+        "start_seconds": 3.0,
+        "selected_seed": 57
+      },
+      {
+        "method": "180-degree rotation",
+        "style": "Watercolor",
+        "start_seconds": 14.5,
+        "selected_seed": 24
+      },
+      {
+        "method": "90-degree rotation",
+        "style": "Oil painting",
+        "start_seconds": 26.0,
+        "selected_seed": 13
+      },
+      {
+        "method": "Vertical flip",
+        "style": "Charcoal",
+        "start_seconds": 37.5,
+        "selected_seed": 34
+      },
+      {
+        "method": "Color inversion",
+        "style": "Copperplate engraving",
+        "start_seconds": 49.0,
+        "selected_seed": 82
+      },
+      {
+        "method": "Patch permutation",
+        "style": "Pencil sketch",
+        "start_seconds": 60.5,
+        "selected_seed": 67
+      }
+    ]
+  }
+}
