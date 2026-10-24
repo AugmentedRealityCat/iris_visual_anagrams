@@ -23,6 +23,7 @@ def make_frame_motion(im, t):
     return frame
 
 class MotionBlurView(BaseView):
+    component_name = "motion"
     def __init__(self, size=7):
         self.size = size
 
@@ -65,6 +66,7 @@ class MotionBlurView(BaseView):
 
 
 class MotionBlurResView(BaseView):
+    component_name = "motion_res"
     def __init__(self, size=7):
         self.size = size
 

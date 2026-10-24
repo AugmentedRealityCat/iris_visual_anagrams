@@ -36,11 +36,11 @@ VIEW_DEFAULTS = {"patch_permute": "8", "pixel_permute": "64", "skew": "1.5",
 VIEW_HINTS = {"patch_permute": "Patches per side: 1, 2, 4, 8, 16, 32, or 64.",
               "pixel_permute": "Blocks per side: 1, 2, 4, 8, 16, 32, or 64.",
               "skew": "Parameter controls the skew strength.",
-              "low_pass": "Parameter controls blur sigma. Use Sum to combine components.",
-              "high_pass": "Parameter controls blur sigma. Use Sum to combine components.",
-              "scale": "Parameter multiplies this prompt's contribution. Use Sum for components.",
-              "grayscale": "Use Sum to combine grayscale and color components.",
-              "color": "Use Sum to combine grayscale and color components."}
+              "low_pass": "Pair with High frequencies using the same sigma. Auto sums components.",
+              "high_pass": "Pair with Low frequencies using the same sigma. Auto sums components.",
+              "scale": "Component weights must sum to 1. Auto sums their contributions.",
+              "grayscale": "Pair with Color component. Auto sums components.",
+              "color": "Pair with Grayscale component. Auto sums components."}
 BG, PANEL, INK, MUTED, ACCENT = "#f3f5f8", "#ffffff", "#202b3c", "#637086", "#5146d9"
 GENERATION_MODES = {"Turbo · r2-1000 (recommended)": "r2-1000", "Turbo · r1-1500": "r1-1500", "Standard Iris": None}
 ANIMATION_FORMATS = {"MP4 video": ["mp4"], "Animated GIF": ["gif"], "GIF + MP4": ["gif", "mp4"]}
@@ -104,8 +104,8 @@ def build_command(settings, rows, *, python=None, root=ROOT):
             raise ValueError(f"{key.capitalize()} must be a number.") from None
         if not math.isfinite(numbers[key]) or (key == "shift" and numbers[key] <= 0):
             raise ValueError(f"{key.capitalize()} must be finite" + (" and positive." if key == "shift" else "."))
-    if settings["reduction"] not in ("mean", "sum", "alternate"):
-        raise ValueError("Choose Mean, Sum, or Alternate for combining views.")
+    if settings["reduction"] not in ("auto", "mean", "sum", "alternate"):
+        raise ValueError("Choose Auto, Mean, Sum, or Alternate for combining views.")
     if settings["device"] not in ("cuda", "cpu") or settings["text_device"] not in ("cuda", "cpu"):
         raise ValueError("Choose a valid generation and text encoding device.")
     if str(settings["order"]) not in ("1", "2"):
@@ -147,6 +147,9 @@ def build_command(settings, rows, *, python=None, root=ROOT):
         view_names.append(view)
         view_args.append(arg)
 
+    from visual_anagrams.composition import resolve_reduction
+
+    reduction = resolve_reduction(settings["reduction"], view_names, view_args)
     command = [python or sys.executable, "-u", str(Path(root) / "generate.py"),
                "--name", destination.name, "--save_dir", str(output),
                "--prompts", *[row["prompt"].strip() for row in rows],
@@ -155,7 +158,7 @@ def build_command(settings, rows, *, python=None, root=ROOT):
                "--num_inference_steps", str(integers["steps"]), "--num_samples", str(integers["samples"]),
                "--seed", str(integers["seed"]), "--guidance_scale", str(numbers["guidance"]),
                "--shift", str(numbers["shift"]), "--solver_order", str(settings["order"]),
-               "--reduction", settings["reduction"], "--device", settings["device"],
+               "--reduction", reduction, "--device", settings["device"],
                "--text_encoder_device", settings["text_device"]]
     if adapter:
         command.extend(["--turbo", "--turbo_adapter", adapter])
@@ -293,7 +296,7 @@ class AnagramApp(tk.Tk):
         self.form = {key: tk.StringVar(value=value) for key, value in {
             "name": "iris-illusion", "output": str(ROOT / "results"), "style": "an oil painting of",
             "negative": "", "steps": "4", "samples": "1", "guidance": "1.0", "seed": "0",
-            "reduction": "mean", "shift": "4.0", "order": "2", "device": "cuda",
+            "reduction": "auto", "shift": "4.0", "order": "2", "device": "cuda",
             "text_device": "cuda", "model_path": "", "text_path": "",
             "mode": "Turbo · r2-1000 (recommended)",
             "animation_auto": "no", "animation_format": "MP4 video", "animation_fps": "24",
@@ -386,7 +389,7 @@ class AnagramApp(tk.Tk):
         self.negative_entry = ttk.Entry(settings, textvariable=self.form["negative"])
         self.negative_entry.grid(row=9, column=0, columnspan=2, sticky="ew", pady=(4, 10))
         ttk.Label(settings, text="Combine views").grid(row=10, column=0, sticky="w")
-        ttk.Combobox(settings, textvariable=self.form["reduction"], values=["mean", "alternate", "sum"], state="readonly", width=16).grid(row=10, column=1, sticky="ew")
+        ttk.Combobox(settings, textvariable=self.form["reduction"], values=["auto", "mean", "alternate", "sum"], state="readonly", width=16).grid(row=10, column=1, sticky="ew")
 
         output = self._card(self.controls, "SAVE RESULTS")
         output.columnconfigure(0, weight=1)

@@ -119,7 +119,7 @@ def apply_turbo_lora(model, path):
 @torch.inference_mode()
 def sample_turbo(
     model, positive, views, *, size=1024, num_inference_steps=4,
-    reduction="mean", generator=None, device="cuda", shift=4.0, progress=True,
+    reduction="auto", generator=None, device="cuda", shift=4.0, progress=True,
 ):
     """Predict aligned velocities, then re-noise one shared clean-image estimate.
 
@@ -131,8 +131,9 @@ def sample_turbo(
     count = len(views)
     if not count or positive.embeddings.shape[0] != count or positive.mask.shape[0] != count:
         raise ValueError("Number of prompts must match number of views")
-    if reduction not in ("mean", "sum", "alternate"):
-        raise ValueError("Reduction must be mean, sum, or alternate")
+    from visual_anagrams.composition import resolve_reduction
+
+    reduction = resolve_reduction(reduction, views)
     if num_inference_steps < 1 or not math.isfinite(shift) or shift <= 0:
         raise ValueError("Turbo needs positive steps and a positive finite shift")
     if size <= 0 or size % model.cfg.patch_size:

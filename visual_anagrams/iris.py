@@ -171,7 +171,7 @@ def encode_prompts(cfg, prompts, negative_prompt="", device="cuda", text_encoder
 @torch.inference_mode()
 def sample_iris(
     model, positive, negative, views, *, size=1024, num_inference_steps=100,
-    guidance_scale=3.0, reduction="mean", generator=None, device="cuda",
+    guidance_scale=3.0, reduction="auto", generator=None, device="cuda",
     shift=4.0, order=2, num_train_timesteps=1000, prediction="v", progress=True,
 ):
     """Align per-view predictions and integrate one shared RGB image.
@@ -187,8 +187,9 @@ def sample_iris(
         raise ValueError("Number of prompts must match number of views")
     if negative.embeddings.shape[0] != 1 or negative.mask.shape[0] != 1:
         raise ValueError("Expected one shared negative prompt")
-    if reduction not in ("mean", "sum", "alternate"):
-        raise ValueError("Reduction must be mean, sum, or alternate")
+    from visual_anagrams.composition import resolve_reduction
+
+    reduction = resolve_reduction(reduction, views)
     if num_inference_steps < 1 or order not in (1, 2):
         raise ValueError("Use at least one step and solver order 1 or 2")
     if not math.isfinite(shift) or shift <= 0 or not math.isfinite(guidance_scale):

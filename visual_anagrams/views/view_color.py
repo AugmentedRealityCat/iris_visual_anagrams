@@ -30,6 +30,7 @@ def make_frame_color(im, t):
     return frame
 
 class GrayscaleView(BaseView):
+    component_name = "grayscale"
     def __init__(self):
         pass
 
@@ -50,6 +51,7 @@ class GrayscaleView(BaseView):
 
 
 class ColorView(BaseView):
+    component_name = "color"
     def __init__(self):
         pass
 

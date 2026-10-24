@@ -1,6 +1,7 @@
 from .view_base import BaseView
 
 class ScaleView(BaseView):
+    component_name = "scale"
     def __init__(self, scale=0.5):
         self.scale = scale
 

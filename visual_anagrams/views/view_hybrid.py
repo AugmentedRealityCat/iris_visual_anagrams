@@ -38,6 +38,7 @@ def make_frame_hybrid(im, t, resize_factor):
     return frame
 
 class HybridLowPassView(BaseView):
+    component_name = "low_pass"
     def __init__(self, sigma=2, kernel_size=33):
         self.sigma = sigma
         self.kernel_size = kernel_size
@@ -65,6 +66,7 @@ class HybridLowPassView(BaseView):
 
 
 class HybridHighPassView(BaseView):
+    component_name = "high_pass"
     def __init__(self, sigma=2, kernel_size=33):
         self.sigma = sigma
         self.kernel_size = kernel_size
@@ -120,6 +122,7 @@ def compute_triple_bandpass(noise, sigma_1, sigma_2, kernel_size):
     return lp, mp, hp
 
 class TripleHybridLowPassView(BaseView):
+    component_name = "triple_low_pass"
     def __init__(self, sigma_1=1, sigma_2=2, kernel_size=25):
         self.sigma_1 = sigma_1
         self.sigma_2 = sigma_2
@@ -138,6 +141,7 @@ class TripleHybridLowPassView(BaseView):
         return noise
 
 class TripleHybridMediumPassView(BaseView):
+    component_name = "triple_medium_pass"
     def __init__(self, sigma_1=1, sigma_2=2, kernel_size=25):
         self.sigma_1 = sigma_1
         self.sigma_2 = sigma_2
@@ -156,6 +160,7 @@ class TripleHybridMediumPassView(BaseView):
         return noise
 
 class TripleHybridHighPassView(BaseView):
+    component_name = "triple_high_pass"
     def __init__(self, sigma_1=1, sigma_2=2, kernel_size=25):
         self.sigma_1 = sigma_1
         self.sigma_2 = sigma_2
