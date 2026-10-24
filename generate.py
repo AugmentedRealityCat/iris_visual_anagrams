@@ -34,6 +34,14 @@ def build_parser():
     parser.add_argument("--text_encoder_path", help="Local Qwen3-VL-4B-Instruct directory")
     parser.add_argument("--shift", type=float, default=4.0)
     parser.add_argument("--solver_order", type=int, choices=[1, 2], default=2)
+    parser.add_argument("--quality_method", choices=["plain", "anagram_mtl", "syncvc"], default="plain",
+                        help="Optional experimental Iris adaptation (Standard, two geometric views)")
+    parser.add_argument("--optimization_interval", type=int, default=5, help="Apply gradient optimization every N steps")
+    parser.add_argument("--optimization_steps", type=int, default=1, help="Optimization passes at each selected step")
+    parser.add_argument("--method_strength", type=float, default=None,
+                        help="Default: 0.05; MTL edits are scaled by t*(1-t)")
+    parser.add_argument("--subjects", nargs="+", help="Subject words occurring in each prompt, for MTL attention")
+    parser.add_argument("--no_gradient_offload", action="store_true", help="Keep saved gradient activations on GPU")
     # Kept for existing command lines; Iris has only one generation stage.
     parser.add_argument("--generate_1024", action="store_true", help="Compatibility option; Iris already generates at 1024")
     parser.add_argument("--save_metadata", action="store_true", help="Compatibility option; metadata is always saved")
@@ -55,6 +63,21 @@ def main(argv=None):
 
     try:
         args.reduction = resolve_reduction(args.reduction, args.views, args.view_args)
+    except ValueError as exc:
+        parser.error(str(exc))
+    from visual_anagrams.method_options import MethodOptions
+
+    method_options = MethodOptions(args.quality_method, args.optimization_interval, args.optimization_steps,
+                                   args.method_strength, not args.no_gradient_offload)
+    args.method_strength = method_options.strength
+    try:
+        method_options.validate(args.views, turbo=args.turbo, reduction=args.reduction, steps=args.num_inference_steps)
+        if args.subjects is not None and len(args.subjects) != len(args.views):
+            raise ValueError("--subjects must have one phrase per view")
+        if args.quality_method == "anagram_mtl":
+            for prompt, subject in zip(args.prompts, args.subjects or args.prompts):
+                if not subject.strip() or subject.casefold() not in f"{args.style} {prompt}".casefold():
+                    raise ValueError("Each subject phrase must occur in its corresponding prompt")
     except ValueError as exc:
         parser.error(str(exc))
     if args.num_samples < 1 or args.num_inference_steps < 1:
@@ -107,6 +130,8 @@ def main(argv=None):
     print(f"Preparing {MODEL_ID} (1024x1024)", flush=True)
     directory = resolve_model(args.model_path)
     cfg = read_config(directory)
+    if args.quality_method != "plain" and (cfg.flow.prediction != "v" or cfg.flow.num_train_timesteps != 1000):
+        parser.error("Experimental quality methods require Iris velocity prediction and 1000 training timesteps")
     turbo_path, turbo_metadata = None, None
     if args.turbo:
         from visual_anagrams.turbo import (
@@ -127,8 +152,20 @@ def main(argv=None):
         cfg, prompts, args.negative_prompt, args.text_encoder_device, args.text_encoder_path,
         encode_negative=not args.turbo,
     )
+    subject_positions, method_scorer = None, None
+    if args.quality_method == "anagram_mtl":
+        from transformers import AutoTokenizer
+        from visual_anagrams.optimization import subject_token_indices
+
+        tokenizer = AutoTokenizer.from_pretrained(cfg.text_encoder.pretrained)
+        subject_positions = subject_token_indices(tokenizer, prompts, args.subjects or args.prompts)
+        del tokenizer
     print("Loading Iris INT8", flush=True)
     model = load_model(directory, cfg, args.device, turbo_path=turbo_path)
+    if args.quality_method == "anagram_mtl":
+        from visual_anagrams.advanced_sampling import PreviewScorer
+
+        method_scorer = PreviewScorer(prompts)
 
     save_dir = Path(args.save_dir) / args.name
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -139,13 +176,21 @@ def main(argv=None):
                     model_path_resolved=str(directory.resolve()), model_manifest=manifest,
                     iris_code_revision=CODE_REVISION, text_encoder_id=TEXT_ID,
                     text_encoder_revision=TEXT_REVISION if args.text_encoder_path is None else None,
-                    size=1024, turbo_lora=turbo_metadata)
+                    size=1024, turbo_lora=turbo_metadata, subject_token_positions=subject_positions)
     (save_dir / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     for index in range(args.num_samples):
         seed = args.seed + index
         print(f"Generating sample {index + 1}/{args.num_samples}, seed {seed}", flush=True)
         generator = torch.Generator(device=args.device).manual_seed(seed)
-        if args.turbo:
+        diagnostics = {}
+        if args.quality_method != "plain":
+            from visual_anagrams.advanced_sampling import sample_advanced
+
+            image = sample_advanced(model, positive, negative, views, options=method_options, prompts=prompts,
+                                   subject_positions=subject_positions, num_inference_steps=args.num_inference_steps,
+                                   guidance_scale=args.guidance_scale, generator=generator, device=args.device,
+                                   shift=args.shift, order=args.solver_order, diagnostics=diagnostics, scorer=method_scorer)
+        elif args.turbo:
             from visual_anagrams.turbo import sample_turbo
 
             image = sample_turbo(
@@ -162,6 +207,8 @@ def main(argv=None):
         sample_dir = save_dir / f"{seed:04}"
         sample_dir.mkdir(parents=True, exist_ok=True)
         save_illusion(image.cpu(), views, sample_dir)
+        if diagnostics:
+            (sample_dir / "quality.json").write_text(json.dumps(diagnostics, indent=2), encoding="utf-8")
         print(f"Saved {sample_dir / 'sample_1024.png'}", flush=True)
         if args.label_outputs:
             from visual_anagrams.export import label_saved_images
