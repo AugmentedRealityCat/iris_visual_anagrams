@@ -1,0 +1,114 @@
+{
+  "cases": [
+    {
+      "id": "owl-dog",
+      "style": "a watercolor painting of",
+      "prompts": [
+        "an owl",
+        "a dog"
+      ],
+      "views": [
+        "identity",
+        "rotate_180"
+      ]
+    },
+    {
+      "id": "village-horse",
+      "style": "an oil painting of",
+      "prompts": [
+        "a snowy mountain village",
+        "a horse"
+      ],
+      "views": [
+        "identity",
+        "rotate_cw"
+      ]
+    }
+  ],
+  "modes": [
+    {
+      "id": "standard-g3",
+      "turbo": false,
+      "steps": 30,
+      "guidance": 3.0,
+      "reduction": "mean"
+    },
+    {
+      "id": "standard-g4",
+      "turbo": false,
+      "steps": 30,
+      "guidance": 4.0,
+      "reduction": "mean"
+    },
+    {
+      "id": "standard-g5",
+      "turbo": false,
+      "steps": 30,
+      "guidance": 5.0,
+      "reduction": "mean"
+    },
+    {
+      "id": "turbo-r2-mean",
+      "turbo": true,
+      "steps": 4,
+      "guidance": 1.0,
+      "reduction": "mean"
+    },
+    {
+      "id": "turbo-r2-sum",
+      "turbo": true,
+      "steps": 4,
+      "guidance": 1.0,
+      "reduction": "sum",
+      "control": true
+    },
+    {
+      "id": "turbo-r2-8step",
+      "turbo": true,
+      "steps": 8,
+      "guidance": 1.0,
+      "reduction": "mean",
+      "research": "mean"
+    },
+    {
+      "id": "turbo-r2-16step",
+      "turbo": true,
+      "steps": 16,
+      "guidance": 1.0,
+      "reduction": "mean",
+      "research": "mean"
+    },
+    {
+      "id": "turbo-r2-balanced",
+      "turbo": true,
+      "steps": 4,
+      "guidance": 1.0,
+      "reduction": "mean",
+      "research": "preview-balanced"
+    },
+    {
+      "id": "turbo-r2-variance",
+      "turbo": true,
+      "steps": 4,
+      "guidance": 1.0,
+      "reduction": "mean",
+      "research": "bounded-variance"
+    }
+  ],
+  "seeds": [
+    0
+  ],
+  "size": 1024,
+  "shift": 4.0,
+  "solver_order": 2,
+  "model": "Aikimi/iris-3b-int8",
+  "model_revision": "6231647d02bb538b401a675061c11c7a64bba81f",
+  "code_revision": "a8d15239dea469aba042cfa56ca3bb4e450d5ebc",
+  "text_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+  "turbo_revision": "fe16b3496eb440585993c92d95641c08c6b08263",
+  "adapter": "r2-1000",
+  "research_notes": {
+    "preview_balancing": "Clean CLIP previews every two steps below t=.95; softmax(-10*score), weights clipped to [.25,.75], then smoothed 50% with previous weights.",
+    "bounded_variance": "Convert v to epsilon; Pearson correlation estimate, raw gain capped at 1.2, 50% blend (applied gain <=1.1); skip outside .05<t<.95. Not full Anagram-MTL."
+  }
+}

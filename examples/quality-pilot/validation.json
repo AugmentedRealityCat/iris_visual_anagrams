@@ -1,0 +1,29 @@
+{
+  "source_sha256": {
+    "visual_anagrams/iris.py": "72836af0ae03d4d232b0541e208a4f4a70ed3081ab19546602c220ef8de065b2",
+    "visual_anagrams/turbo.py": "fc7debc62a5bce673dffc9edb5328cab63342d1b9db351e12b458da68d6e572a",
+    "visual_anagrams/views/view_rotate.py": "e2e5f513800373cc9ed368551757ba0429b82e7f956146f531ba6d8622879ad3",
+    "visual_anagrams/composition.py": "7c6095ef52fa62ec20662b8311dec66e99a5eef4326f8e8f57a0a51c18c07aa2",
+    "scripts/benchmark_quality.py": "bdbb12398ec85e879552ac6f568ec920e39316cf72cb4a9b39e58281a2236ab6",
+    "scripts/benchmark_quality_experiments.py": "99a06522f2c7197c196cb27bc088d32996da1db7a903f59d76080047d7917b1d",
+    "scripts/quality_methods.py": "3530e9c6cb784e096f90360fa18950bc1f4f4e7aed376ca0442bf35991d5a49d"
+  },
+  "packages": {
+    "torch": "2.11.0+cu128",
+    "transformers": "4.57.6",
+    "Pillow": "13.0.0",
+    "numpy": "2.5.4",
+    "safetensors": "0.8.0"
+  },
+  "real_control": {
+    "reference": "results/iris-illusion_40/0000/sample_1024.png",
+    "experimental": "turbo-r2-8step/owl-dog/0000/sample_1024.png",
+    "maximum_pixel_difference": 0,
+    "changed_pixel_channels": 0
+  },
+  "isolated_research_tests": "19 passed",
+  "scope": "Two prompt pairs, seed 0, 30 standard steps; no completed 100-step runs in this pilot.",
+  "validated_generations": 18,
+  "validated_view_sheets": 18,
+  "validated_evaluator_records": 36
+}
