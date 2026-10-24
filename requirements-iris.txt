@@ -1,0 +1,13 @@
+# Install CUDA PyTorch separately; see setup-iris.ps1 or readme.md.
+accelerate>=1.12,<2
+transformers>=4.57.3,<5
+huggingface-hub[hf_xet]>=0.36,<1
+safetensors>=0.7,<1
+omegaconf>=2.3,<3
+numpy>=1.26,<3
+Pillow>=12.1.1
+einops>=0.8,<1
+tqdm>=4.67,<5
+imageio>=2.37,<3
+imageio-ffmpeg>=0.6,<1
+pytest>=8,<10
