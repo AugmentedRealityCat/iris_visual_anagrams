@@ -1,6 +1,5 @@
-﻿# Visual Anagrams with Iris 3B INT8
+# Visual Anagrams with Iris 3B INT8
 <img width="3829" height="2064" alt="GUI_VA" src="https://github.com/user-attachments/assets/dbf59f67-5bd2-447f-aa4f-22a1d825c378" />
-
 
 
 `generate.py` now uses [Aikimi/iris-3b-int8](https://huggingface.co/Aikimi/iris-3b-int8), replacing DeepFloyd IF's two-stage generation with one **1024 x 1024 pixel-space** generation pass. Every denoising step predicts each prompted view, applies its inverse transformation, and combines the aligned predictions. There is no VAE or separate upscaler in this path.
@@ -10,14 +9,7 @@ Iris in the GUI, or pass `--standard`, for the original 100-step Iris sampler.
 
 ## Example gallery and showcase
 
-
-
-
-
 https://github.com/user-attachments/assets/88020cdb-0cd1-42b6-b5cc-13d67ae80aea
-
-
-
 
 
 [Prompts, seeds and settings](examples/showcase/manifest.json)
@@ -49,10 +41,7 @@ describe disk usage; the two models do not occupy VRAM together. This setup has
 completed multi-view generation on the RTX 3060 12 GB. `--text_encoder_device cpu`
 also provides an option to encode prompts using system RAM.
 
-
-
 https://github.com/user-attachments/assets/1f574ac2-1c45-40f7-b166-2d4942e1d605
-
 
 
 ## Generate an illusion
@@ -87,6 +76,11 @@ Rotations turn the actual image, while vertical flips turn it around a
 horizontal axis. For runs with several transformed views, each receives its
 own animation.
 
+Enable **Borderless / fill frame** to remove the outer margin from GIF and MP4
+exports. Rotating corners and moving pieces are cropped to the image viewport;
+edge-on flips use a blurred image background instead of blank padding. Leave it
+unchecked to keep space around the image for the complete motion.
+
 Enable **Overlay prompt labels** to show the matching prompt on the image
 (for example, “a horse” at the rotated view). Labels fade out during movement
 and reappear at the endpoints. This also saves `.labeled.png` and
@@ -110,7 +104,8 @@ Command-line examples:
 
 Use `--animation_fps`, `--animation_size`, `--animation_transition`, and
 `--animation_hold` to change timing and size. Add `--animation_one_way` to omit
-the return movement. Exports run on CPU using the already-installed imageio
+the return movement. Add `--animation_borderless` to fill the frame without
+outer padding. Exports run on CPU using the already-installed imageio
 and FFmpeg packages; no model loading or downloads are needed for saved images.
 
 ### Turbo LoRA (default)
@@ -163,7 +158,7 @@ Useful options:
 
 - `--negative_prompt "..."`: one negative prompt shared by all views.
 - `--seed 42`: first sample seed; later samples increment it.
-- `--reduction mean`: average predictions, the default for anagrams. `alternate` cycles views between steps; `sum` adds components for factorized diffusion.
+- `--reduction auto` (default): average geometric view predictions and sum factorized components. `alternate` cycles geometric views between steps; `mean` and `sum` remain explicit options. Component methods require a complete matching set and `auto` or `sum`: low/high frequencies with the same sigma, grayscale/color, all three frequency bands, motion/residual, or scale weights that sum to 1.
 - `--view_args`: one argument per view, following the existing view definitions.
 - `--shift 4.0` and `--solver_order 2`: upstream flow sampling defaults.
 - `--model_path PATH`: a local Iris INT8 generation export containing `model.safetensors`, `config.yaml`, and `manifest.json`.
