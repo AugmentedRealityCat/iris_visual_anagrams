@@ -1,5 +1,8 @@
 ﻿# Visual Anagrams with Iris 3B INT8
 
+![Uploading GUI_VA.jpg…]()
+
+
 `generate.py` now uses [Aikimi/iris-3b-int8](https://huggingface.co/Aikimi/iris-3b-int8), replacing DeepFloyd IF's two-stage generation with one **1024 x 1024 pixel-space** generation pass. Every denoising step predicts each prompted view, applies its inverse transformation, and combines the aligned predictions. There is no VAE or separate upscaler in this path.
 
 **Turbo r2 is the default:** four steps with built-in guidance. Choose Standard
@@ -7,10 +10,13 @@ Iris in the GUI, or pass `--standard`, for the original 100-step Iris sampler.
 
 ## Example gallery and showcase
 
-[![Six-method showcase](examples/showcase/reddit-thumbnail.jpg)](examples/showcase/README.md)
 
-[Six animated GitHub examples](examples/showcase/README.md) ·
-[75-second video](examples/showcase/reddit-showcase.mp4) ·
+
+Uploading showcase2.mp4…
+
+
+
+
 [Prompts, seeds and settings](examples/showcase/manifest.json)
 
 This is an experimental adaptation of [Visual Anagrams](https://dangeng.github.io/visual_anagrams/) by Daniel Geng, Aaron Park and Andrew Owens. Iris has different training and sampling behavior from DeepFloyd; illusion quality needs experimentation with prompts, guidance and seeds.
