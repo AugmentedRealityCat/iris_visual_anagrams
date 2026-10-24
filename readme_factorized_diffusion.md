@@ -12,6 +12,14 @@ This readme includes instructions on how to use Factorized Diffusion, which allo
 
 For the legacy DeepFloyd installation used below, see [`readme_deepfloyd.md`](readme_deepfloyd.md). The main `generate.py` now uses Iris INT8.
 
+For Iris, component methods use the new `--reduction auto` default, which selects `sum`. For example:
+
+```bash
+python generate.py --name iris_hybrid --prompts "a painting of a panda" "a painting of flowers" --views low_pass high_pass --view_args 2.0 2.0
+```
+
+Use matching sigma values for low/high pairs. Grayscale/color, motion/residual, and all three frequency bands also form complete groups; scale weights must sum to 1. Iris rejects incomplete groups, mismatched filters, and `mean`/`alternate` for components. Components operate on the predicted velocity while every prompt receives the full noisy image. This follows the linear decomposition used in the paper; visual quality with Iris Turbo still needs evaluation.
+
 ## Usage and Important Arguments
 
 As a basic example, the following command can be run to create hybrid images, and saves them to `./results/hybrid/`:
