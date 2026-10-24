@@ -170,7 +170,7 @@ def encode_prompts(cfg, prompts, negative_prompt="", device="cuda", text_encoder
 
 @torch.inference_mode()
 def sample_iris(
-    model, positive, negative, views, *, size=1024, num_inference_steps=100,
+    model, positive, negative, views, *, size=1024, num_inference_steps=30,
     guidance_scale=3.0, reduction="auto", generator=None, device="cuda",
     shift=4.0, order=2, num_train_timesteps=1000, prediction="v", progress=True,
 ):

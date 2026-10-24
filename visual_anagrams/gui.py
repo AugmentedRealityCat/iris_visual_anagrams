@@ -42,7 +42,7 @@ VIEW_HINTS = {"patch_permute": "Patches per side: 1, 2, 4, 8, 16, 32, or 64.",
               "grayscale": "Pair with Color component. Auto sums components.",
               "color": "Pair with Grayscale component. Auto sums components."}
 BG, PANEL, INK, MUTED, ACCENT = "#f3f5f8", "#ffffff", "#202b3c", "#637086", "#5146d9"
-GENERATION_MODES = {"Turbo · r2-1000 (recommended)": "r2-1000", "Turbo · r1-1500": "r1-1500", "Standard Iris": None}
+GENERATION_MODES = {"Standard Iris": None, "Turbo · r2-1000 (fast)": "r2-1000", "Turbo · r1-1500": "r1-1500"}
 ANIMATION_FORMATS = {"MP4 video": ["mp4"], "Animated GIF": ["gif"], "GIF + MP4": ["gif", "mp4"]}
 
 
@@ -298,15 +298,15 @@ class AnagramApp(tk.Tk):
         self.current_sample = 1
         self.form = {key: tk.StringVar(value=value) for key, value in {
             "name": "iris-illusion", "output": str(ROOT / "results"), "style": "an oil painting of",
-            "negative": "", "steps": "4", "samples": "1", "guidance": "1.0", "seed": "0",
+            "negative": "", "steps": "30", "samples": "1", "guidance": "3.0", "seed": "0",
             "reduction": "auto", "shift": "4.0", "order": "2", "device": "cuda",
             "text_device": "cuda", "model_path": "", "text_path": "",
-            "mode": "Turbo · r2-1000 (recommended)",
+            "mode": "Standard Iris",
             "animation_auto": "no", "animation_format": "MP4 video", "animation_fps": "24",
             "animation_size": "768", "animation_transition": "1.5", "animation_hold": "1.0",
             "animation_loop": "yes", "labels": "no", "animation_borderless": "no",
         }.items()}
-        self.standard_settings = {"steps": "100", "guidance": "3.0", "negative": "", "shift": "4.0"}
+        self.standard_settings = None
         self._styles()
         self._layout()
         self.mode_changed()
@@ -504,8 +504,8 @@ class AnagramApp(tk.Tk):
         self.guidance_entry.configure(state="disabled" if turbo else "normal")
         self.negative_entry.configure(state="disabled" if turbo else "normal")
         self.order_combo.configure(state="disabled" if turbo else "readonly")
-        self.mode_hint.configure(text=("Four-step default with built-in guidance. Downloads the selected LoRA on first use."
-                                       if turbo else "Standard sampling with adjustable guidance."))
+        self.mode_hint.configure(text=("Fast previews: 4 steps with built-in guidance. Try 8 steps as an experiment."
+                                       if turbo else "Recommended starting point: 30 steps, guidance 3, Auto combining."))
 
     def _entry(self, parent, label, key, row):
         ttk.Label(parent, text=label).grid(row=row, column=0, columnspan=2, sticky="w")
