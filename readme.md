@@ -49,6 +49,12 @@ describe disk usage; the two models do not occupy VRAM together. This setup has
 completed multi-view generation on the RTX 3060 12 GB. `--text_encoder_device cpu`
 also provides an option to encode prompts using system RAM.
 
+
+
+https://github.com/user-attachments/assets/1f574ac2-1c45-40f7-b166-2d4942e1d605
+
+
+
 ## Generate an illusion
 
 ### Desktop GUI
