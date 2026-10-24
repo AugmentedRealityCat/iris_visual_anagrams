@@ -18,8 +18,10 @@ from visual_anagrams.turbo import (
 from visual_anagrams.views import get_views
 
 
-def test_cli_defaults_to_turbo_r2():
+def test_cli_defaults_to_standard_and_retains_optional_turbo_r2():
     args = build_parser().parse_args(["--name", "test", "--prompts", "one", "--views", "identity"])
+    assert not args.turbo and args.reduction == "auto"
+    args = build_parser().parse_args(["--name", "test", "--prompts", "one", "--views", "identity", "--turbo"])
     assert args.turbo and args.turbo_adapter == "r2-1000"
 
 
@@ -168,8 +170,9 @@ def test_turbo_cli_rejects_extra_guidance_before_downloading(extra):
     assert exc.value.code == 2
 
 
-@pytest.mark.parametrize("turbo", [False, True])
-def test_cli_selects_correct_sampler_and_records_adapter(tmp_path, monkeypatch, turbo):
+@pytest.mark.parametrize("mode", [None, "--standard", "--turbo"])
+def test_cli_selects_correct_sampler_and_records_adapter(tmp_path, monkeypatch, mode):
+    turbo = mode == "--turbo"
     import visual_anagrams.iris as iris
     import visual_anagrams.turbo as turbo_module
     import visual_anagrams.utils as utils
@@ -208,11 +211,11 @@ def test_cli_selects_correct_sampler_and_records_adapter(tmp_path, monkeypatch, 
     monkeypatch.setattr(turbo_module, "sample_turbo", sample_fast)
     monkeypatch.setattr(utils, "save_illusion", lambda *args: None)
     main(["--name", "test", "--save_dir", str(tmp_path), "--prompts", "one", "--views", "identity",
-          "--device", "cpu", "--text_encoder_device", "cpu", *(["--turbo"] if turbo else ["--standard"])])
+          "--device", "cpu", "--text_encoder_device", "cpu", *([mode] if mode else [])])
     metadata = json.loads((tmp_path / "test" / "metadata.json").read_text())
     assert calls["encode_negative"] is (not turbo)
     assert calls["sampler"] == ("turbo" if turbo else "standard")
-    assert calls["steps"] == (4 if turbo else 100)
+    assert calls["steps"] == (4 if turbo else 30)
     assert calls["guidance"] == (None if turbo else 3.0)
     assert calls["adapter_path"] == (path if turbo else None)
     if turbo:

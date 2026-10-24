@@ -78,7 +78,7 @@ def test_turbo_toggle_restores_standard_settings():
         app.mode_changed()
         app.form["steps"].set("40")
         app.form["negative"].set("blurry")
-        app.form["mode"].set("Turbo · r2-1000 (recommended)")
+        app.form["mode"].set("Turbo · r2-1000 (fast)")
         app.mode_changed()
         assert app.form["steps"].get() == "4"
         assert app.form["negative"].get() == ""
@@ -96,23 +96,30 @@ def test_turbo_toggle_restores_standard_settings():
         app.destroy()
 
 
-def test_turbo_r2_defaults_and_explicit_standard_command(tmp_path):
+def test_standard_quality_defaults_and_optional_turbo_command(tmp_path):
     app = AnagramApp()
     app.withdraw()
     try:
-        assert app.form["mode"].get() == "Turbo · r2-1000 (recommended)"
-        assert app.form["steps"].get() == "4" and app.form["guidance"].get() == "1.0"
+        assert app.form["mode"].get() == "Standard Iris"
+        assert app.form["steps"].get() == "30" and app.form["guidance"].get() == "3.0"
         assert app.form["reduction"].get() == "auto"
-        assert app.guidance_entry.instate(["disabled"])
+        assert app.guidance_entry.instate(["!disabled"])
+        assert app.negative_entry.instate(["!disabled"])
+        assert app.order_combo.instate(["readonly", "!disabled"])
         app.form["output"].set(str(tmp_path))
         command, _ = build_command({key: value.get() for key, value in app.form.items()}, [row.values() for row in app.rows])
         args = build_parser().parse_args(command[3:])
-        assert args.turbo and args.turbo_adapter == "r2-1000"
-        app.form["mode"].set("Standard Iris")
+        assert not args.turbo and args.guidance_scale == 3.0 and args.num_inference_steps == 30
+        assert args.reduction == "mean"
+        app.form["mode"].set("Turbo · r2-1000 (fast)")
         app.mode_changed()
         command, _ = build_command({key: value.get() for key, value in app.form.items()}, [row.values() for row in app.rows])
         args = build_parser().parse_args(command[3:])
-        assert not args.turbo and args.guidance_scale == 3.0 and args.num_inference_steps == 100
+        assert args.turbo and args.turbo_adapter == "r2-1000"
+        assert args.num_inference_steps == 4 and args.guidance_scale == 1
+        app.form["mode"].set("Standard Iris")
+        app.mode_changed()
+        assert app.form["steps"].get() == "30" and app.form["guidance"].get() == "3.0"
     finally:
         app.destroy()
 
