@@ -4,8 +4,10 @@
 
 `generate.py` now uses [Aikimi/iris-3b-int8](https://huggingface.co/Aikimi/iris-3b-int8), replacing DeepFloyd IF's two-stage generation with one **1024 x 1024 pixel-space** generation pass. Every denoising step predicts each prompted view, applies its inverse transformation, and combines the aligned predictions. There is no VAE or separate upscaler in this path.
 
-**Turbo r2 is the default:** four steps with built-in guidance. Choose Standard
-Iris in the GUI, or pass `--standard`, for the original 100-step Iris sampler.
+**Standard Iris is the default:** 30 steps, guidance 3, Auto view combining,
+flow shift 4, and solver order 2. These starting settings were selected after
+our [quality pilot](examples/quality-pilot/README.md). Turbo r2 remains an
+optional fast sampler for previews, seed searches, and puzzle experiments.
 
 ## Example gallery and showcase
 
@@ -14,12 +16,16 @@ https://github.com/user-attachments/assets/88020cdb-0cd1-42b6-b5cc-13d67ae80aea
 
 [Prompts, seeds and settings](examples/showcase/manifest.json)
 
+The showcase above was generated with Turbo r2. For a comparison of the current
+Standard defaults with Turbo, see the [quality test gallery](examples/quality-pilot/README.md).
+
 This is an experimental adaptation of [Visual Anagrams](https://dangeng.github.io/visual_anagrams/) by Daniel Geng, Aaron Park and Andrew Owens. Iris has different training and sampling behavior from DeepFloyd; illusion quality needs experimentation with prompts, guidance and seeds.
 
 ## Windows setup
 
 **Verified on an NVIDIA GeForce RTX 3060 with 12 GB VRAM.** The example gallery
 was generated on this card at 1024 × 1024 using Iris INT8 and Turbo r2.
+The Standard/Turbo quality pilot also ran on this RTX 3060.
 
 For the supplied Windows setup script, install Git, Python 3.11 or newer (the
 script defaults to 3.12), [uv](https://docs.astral.sh/uv/), and an NVIDIA driver
@@ -58,6 +64,9 @@ The desktop window opens without loading or downloading models. Enter a prompt
 and transformation for each view, adjust the style, steps, guidance and seed,
 then click **Generate illusion**. Use **Add another view** for more perspectives.
 The first generation downloads the required weights if they are not cached.
+The initial settings are **Standard Iris**, **30 steps**, **guidance 3**, and
+**Auto** combining. Selecting a Turbo mode sets four steps and built-in guidance;
+switching back restores your previous Standard settings.
 
 The GUI shows progress and logs, lets you cancel generation, and previews each
 completed sample in **Original image** and **All views** tabs. Existing run names
@@ -99,7 +108,7 @@ Command-line examples:
 .\.venv\Scripts\python.exe export_animation.py --im_path results/iris-rotation-fix/0000/sample_1024.png --animation_formats gif mp4 --label_outputs
 
 # Generate and automatically export:
-.\.venv\Scripts\python.exe generate.py --name animated-illusion --prompts "a snowy mountain village" "a horse" --style "an oil painting of" --views identity rotate_cw --turbo --animation_formats gif mp4 --label_outputs
+.\.venv\Scripts\python.exe generate.py --name animated-illusion --prompts "a snowy mountain village" "a horse" --style "an oil painting of" --views identity rotate_cw --animation_formats gif mp4 --label_outputs
 ```
 
 Use `--animation_fps`, `--animation_size`, `--animation_transition`, and
@@ -108,28 +117,65 @@ the return movement. Add `--animation_borderless` to fill the frame without
 outer padding. Exports run on CPU using the already-installed imageio
 and FFmpeg packages; no model loading or downloads are needed for saved images.
 
-### Turbo LoRA (default)
+### Quality findings and starting settings
 
-Choose **Turbo · r2-1000 (recommended)** under **Generation mode** in the GUI.
-**Turbo · r1-1500** selects the earlier release. Switching back to **Standard
-Iris** restores your previous steps, guidance, negative prompt and flow shift.
+Our pilot generated **18 images**: two rotation prompt pairs, seed 0, and
+1024 × 1024 INT8 inference on the RTX 3060. The table shows the mean of each
+image's weaker-view CLIP score, using ViT-L/14, which did not guide generation.
+Higher scores indicate stronger prompt alignment, not necessarily a better
+optical illusion.
 
-The command line uses Turbo r2 automatically (`--turbo` remains accepted):
+| Settings | Weaker-view score ↑ | Generation time per image |
+| --- | ---: | ---: |
+| **Standard, 30 steps, guidance 3** | **0.268** | 403 s |
+| Turbo r2, 4 steps | 0.204 | 28 s |
+| Turbo r2, 8 steps | 0.244 | 56 s |
+| Turbo r2, 16 steps | 0.201 | 113 s |
+| Turbo r2, 4 steps, experimental adaptive weighting | 0.240 | 28 s |
+
+Standard guidance 3–4 gave stronger overall alignment than the four-step Turbo
+baseline; increasing guidance to 5 did not improve the mean score. Eight Turbo
+steps were a useful experiment, while sixteen were unreliable. Adaptive
+weighting improved both tested pairs at little extra sampling time, but is
+currently available only in the research scripts. Bounded variance correction
+had little practical effect.
+
+This pilot used only one seed per pair and did not test puzzles, all other
+transformations, or 100-step Standard sampling. Some Standard images still
+separate the two subjects into different areas despite high scores. Inspect
+both views, try different seeds, and treat these settings as a starting point.
+The two CLIP evaluators also disagreed on some rankings.
+
+[Full results, both evaluators, comparison images and reproduction commands](examples/quality-pilot/README.md).
+
+### Turbo LoRA (optional fast mode)
+
+Choose **Turbo · r2-1000 (fast)** under **Generation mode**, or pass `--turbo`.
+**Turbo · r1-1500** selects the earlier adapter. Turbo is useful when exploring
+many prompts and seeds quickly, including patch-shuffle and jigsaw puzzles.
+The existing showcase includes Turbo puzzle examples; the quality pilot did
+not establish whether Standard or Turbo is better for puzzles.
 
 ```powershell
 .\.venv\Scripts\python.exe generate.py --name iris-turbo --prompts "a snowy mountain village" "a horse" --style "an oil painting of" --views identity rotate_cw --turbo
+
+# A fast 4-by-4 patch puzzle experiment:
+.\.venv\Scripts\python.exe generate.py --name turbo-puzzle --prompts "an elephant" "a rabbit" --style "a pencil sketch of" --views identity patch_permute --view_args 0 4 --turbo
 ```
 
 This downloads only the selected adapter from
 [pentacoxian-dev/iris-3b-turbo-lora](https://huggingface.co/pentacoxian-dev/iris-3b-turbo-lora)
 (about 460 MB), at pinned revision `fe16b3496eb440585993c92d95641c08c6b08263`.
-`r2-1000` is the default; use `--turbo_adapter r1-1500` for the earlier adapter.
+`r2-1000` is the default adapter when Turbo is selected; use
+`--turbo_adapter r1-1500` for the earlier adapter. Standard does not load a LoRA.
 
 Turbo defaults to **4 steps** and **guidance 1** because CFG 3 is already
 distilled into the adapter. Negative prompts and DPM solver order are unused;
 the CLI rejects extra guidance or nonempty negative prompts in Turbo mode.
 The GUI disables those controls while Turbo is selected. The step count stays
 editable for experiments; the released adapters were trained for four steps.
+Use `--turbo --num_inference_steps 8` to try the longer Turbo setting from the
+pilot. More steps do not guarantee a stronger illusion.
 
 The Turbo sampler follows the author's shifted re-noising schedule. It aligns
 the velocity predictions from all views before adding fresh noise to the shared
@@ -139,10 +185,13 @@ cores, are merged in place. Adapter identity and settings are saved in metadata.
 This INT8, multi-view adaptation has automated CPU/CUDA checks and a completed
 1024-square Turbo smoke run. Illusion quality still depends on prompts and seeds.
 
-### Standard generation
+### Standard generation (default)
+
+The CLI uses 30 steps and guidance 3 without extra sampling flags. `--standard`
+can also be supplied explicitly. Override steps or guidance when experimenting.
 
 ```powershell
-.\.venv\Scripts\python.exe generate.py --name iris.village.horse --prompts "a snowy mountain village" "a horse" --style "an oil painting of" --views identity rotate_cw --standard --num_samples 1 --num_inference_steps 100 --guidance_scale 3.0
+.\.venv\Scripts\python.exe generate.py --name iris.village.horse --prompts "a snowy mountain village" "a horse" --style "an oil painting of" --views identity rotate_cw
 ```
 
 Output:
@@ -159,6 +208,7 @@ Useful options:
 - `--negative_prompt "..."`: one negative prompt shared by all views.
 - `--seed 42`: first sample seed; later samples increment it.
 - `--reduction auto` (default): average geometric view predictions and sum factorized components. `alternate` cycles geometric views between steps; `mean` and `sum` remain explicit options. Component methods require a complete matching set and `auto` or `sum`: low/high frequencies with the same sigma, grayscale/color, all three frequency bands, motion/residual, or scale weights that sum to 1.
+- For rotations and other geometric views, use **Auto/Mean**. The pilot's **Sum** controls produced severely overexposed images.
 - `--view_args`: one argument per view, following the existing view definitions.
 - `--shift 4.0` and `--solver_order 2`: upstream flow sampling defaults.
 - `--model_path PATH`: a local Iris INT8 generation export containing `model.safetensors`, `config.yaml`, and `manifest.json`.
