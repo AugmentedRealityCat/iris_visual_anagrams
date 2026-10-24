@@ -38,6 +38,51 @@ def test_animation_endpoint_matches_actual_transform(view, operation):
     np.testing.assert_array_equal(actual, np.asarray(image.transpose(operation)))
 
 
+@pytest.mark.parametrize("view,operation", [
+    ("rotate_cw", Image.Transpose.ROTATE_270), ("rotate_ccw", Image.Transpose.ROTATE_90),
+    ("rotate_180", Image.Transpose.ROTATE_180), ("flip", Image.Transpose.FLIP_TOP_BOTTOM),
+])
+def test_borderless_endpoints_fill_canvas_with_complete_transformed_image(view, operation):
+    image = colored_image(128)
+    options = AnimationOptions(size=128, borderless=True)
+    first = render_frame(image, view, None, 0, options)
+    last = render_frame(image, view, None, 1, options)
+    np.testing.assert_array_equal(np.asarray(first), np.asarray(image))
+    np.testing.assert_array_equal(np.asarray(last), np.asarray(image.transpose(operation)))
+
+
+@pytest.mark.parametrize("view", ["rotate_cw", "rotate_ccw", "rotate_180"])
+def test_borderless_rotations_cover_corners_throughout_movement(view):
+    from visual_anagrams.export import _art_frame
+
+    image = colored_image(128)
+    for t in np.linspace(0, 1, 21):
+        art = _art_frame(image, view, None, float(t), 128, borderless=True)
+        assert art.size == (128, 128)
+        assert np.asarray(art.getchannel("A")).min() == 255
+
+
+def test_borderless_custom_view_crops_canvas_without_detecting_white_artwork():
+    class PaddedView:
+        def make_frame(self, image, t):
+            frame = Image.new("RGB", (192, 192), "white")
+            frame.paste(image, (32, 32))
+            return frame
+
+    image = colored_image(128)
+    # White content inside the image must be retained, not auto-trimmed.
+    image.paste("white", (0, 0, 40, 128))
+    actual = render_frame(image, "custom", PaddedView(), 0, AnimationOptions(size=128, borderless=True))
+    np.testing.assert_array_equal(np.asarray(actual), np.asarray(image))
+
+
+def test_borderless_flip_keeps_image_backed_background_at_edge_on_midpoint():
+    frame = render_frame(colored_image(128), "flip", None, 0.5, AnimationOptions(size=128, borderless=True))
+    assert frame.size == (128, 128)
+    assert np.asarray(frame).max() < 240
+    assert np.asarray(frame).std() > 20
+
+
 def test_negation_endpoint_and_loop_timing():
     image = colored_image()
     options = AnimationOptions(fps=10, size=128, transition=0.4, hold=0.2)
@@ -80,10 +125,11 @@ def test_animation_labels_fade_during_movement():
     assert not np.array_equal(np.asarray(start), np.asarray(render_frame(image, "rotate_cw", None, 0, plain)))
 
 
-def test_real_gif_and_mp4_have_frames_correct_timing_and_unique_names(tmp_path):
+@pytest.mark.parametrize("borderless", [False, True])
+def test_real_gif_and_mp4_have_frames_correct_timing_and_unique_names(tmp_path, borderless):
     source = tmp_path / "sample.with.dots.png"
     colored_image().save(source)
-    options = AnimationOptions(fps=10, size=128, transition=0.2, hold=0.1, labels=True)
+    options = AnimationOptions(fps=10, size=128, transition=0.2, hold=0.1, labels=True, borderless=borderless)
     kwargs = dict(views=[None, None], view_names=["identity", "rotate_cw"],
                   prompts=["a village", "a horse"], formats=["gif", "mp4"], options=options)
     paths = export_animations(source, **kwargs)
@@ -92,6 +138,9 @@ def test_real_gif_and_mp4_have_frames_correct_timing_and_unique_names(tmp_path):
     with Image.open(paths[0]) as gif:
         assert gif.is_animated and gif.n_frames == frames
         assert gif.info["loop"] == 0
+        expected_corner = (230, 25, 25) if borderless else (245, 246, 249)
+        np.testing.assert_allclose(np.asarray(gif.convert("RGB"))[:8, :8].mean(axis=(0, 1)),
+                                   expected_corner, atol=5)
         duration = 0
         for index in range(gif.n_frames):
             gif.seek(index)
@@ -101,6 +150,8 @@ def test_real_gif_and_mp4_have_frames_correct_timing_and_unique_names(tmp_path):
         assert movie.count_frames() == frames
         assert movie.get_meta_data()["fps"] == options.fps
         assert movie.get_meta_data()["size"] == (128, 128)
+        np.testing.assert_allclose(movie.get_data(0)[:8, :8].mean(axis=(0, 1)),
+                                   expected_corner, atol=12)
         assert not np.array_equal(movie.get_data(0), movie.get_data(3))
     original_bytes = [path.read_bytes() for path in paths]
     again = export_animations(source, **kwargs)
@@ -144,12 +195,14 @@ def test_invalid_animation_options_fail_before_model_download(flag, value):
 def test_gui_forwards_animation_and_label_options(tmp_path):
     settings = dict(name="test", output=str(tmp_path), style="", negative="", steps="4", samples="1", seed="0",
                     guidance="1", shift="4", order="2", reduction="mean", device="cuda", text_device="cpu",
-                    animation_auto="yes", animation_format="GIF + MP4", labels="yes", animation_loop="no")
+                    animation_auto="yes", animation_format="GIF + MP4", labels="yes", animation_loop="no",
+                    animation_borderless="yes")
     command, _ = build_command(settings, [{"prompt": "village", "view": "identity"},
                                          {"prompt": "horse", "view": "rotate_cw"}])
     args = build_parser().parse_args(command[3:])
     assert args.animation_formats == ["gif", "mp4"] and args.label_outputs
     assert args.animation_one_way and args.animation_fps == 24
+    assert args.animation_borderless
 
 
 def test_desktop_exports_existing_image_without_loading_models(tmp_path):
@@ -166,10 +219,12 @@ def test_desktop_exports_existing_image_without_loading_models(tmp_path):
         app.sample_picker.configure(values=["Seed 0"])
         app.sample_picker.current(0)
         for key, value in dict(animation_format="GIF + MP4", animation_fps="5", animation_size="128",
-                               animation_transition="0.2", animation_hold="0", labels="yes").items():
+                               animation_transition="0.2", animation_hold="0", labels="yes",
+                               animation_borderless="yes").items():
             app.form[key].set(value)
         command = build_export_command({key: value.get() for key, value in app.form.items()}, source)
         assert "export_animation.py" in command[2] and "generate.py" not in command[2]
+        assert "--animation_borderless" in command
         app.export_animation()
         deadline = time.monotonic() + 15
         while app.running and time.monotonic() < deadline:
