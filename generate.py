@@ -17,15 +17,16 @@ def build_parser():
     parser.add_argument("--view_args", nargs="+")
     parser.add_argument("--style", default="")
     parser.add_argument("--num_samples", type=int, default=1)
-    parser.add_argument("--num_inference_steps", type=int, default=None, help="Default: 4, or 100 with --standard")
-    parser.add_argument("--guidance_scale", type=float, default=None, help="Default: 1, or 3 with --standard")
+    parser.add_argument("--num_inference_steps", type=int, default=None, help="Default: 30, or 4 with --turbo")
+    parser.add_argument("--guidance_scale", type=float, default=None, help="Default: 3, or 1 with --turbo")
     sampling = parser.add_mutually_exclusive_group()
-    sampling.add_argument("--turbo", dest="turbo", action="store_true", help="Use Turbo LoRA (default)")
-    sampling.add_argument("--standard", dest="turbo", action="store_false", help="Use standard Iris with DPM sampling")
-    parser.set_defaults(turbo=True)
+    sampling.add_argument("--turbo", dest="turbo", action="store_true", help="Use the optional fast Turbo LoRA sampler")
+    sampling.add_argument("--standard", dest="turbo", action="store_false", help="Use standard Iris with DPM sampling (default)")
+    parser.set_defaults(turbo=False)
     parser.add_argument("--turbo_adapter", choices=["r2-1000", "r1-1500"], default="r2-1000")
     parser.add_argument("--negative_prompt", default="")
-    parser.add_argument("--reduction", choices=["mean", "sum", "alternate"], default="mean")
+    parser.add_argument("--reduction", choices=["auto", "mean", "sum", "alternate"], default="auto",
+                        help="Auto averages geometric views and sums complete component groups")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--text_encoder_device", default="cuda", help="Use cpu to encode prompts without GPU memory")
@@ -42,7 +43,7 @@ def build_parser():
 def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
-    args.num_inference_steps = args.num_inference_steps if args.num_inference_steps is not None else (4 if args.turbo else 100)
+    args.num_inference_steps = args.num_inference_steps if args.num_inference_steps is not None else (4 if args.turbo else 30)
     args.guidance_scale = args.guidance_scale if args.guidance_scale is not None else (1.0 if args.turbo else 3.0)
     if args.turbo and (args.guidance_scale != 1.0 or args.negative_prompt.strip()):
         parser.error("Turbo has built-in guidance: use --guidance_scale 1 and an empty negative prompt")
@@ -50,6 +51,12 @@ def main(argv=None):
         parser.error("--prompts and --views must have the same number of entries")
     if args.view_args is not None and len(args.view_args) != len(args.views):
         parser.error("--view_args must have one entry per view")
+    from visual_anagrams.composition import resolve_reduction
+
+    try:
+        args.reduction = resolve_reduction(args.reduction, args.views, args.view_args)
+    except ValueError as exc:
+        parser.error(str(exc))
     if args.num_samples < 1 or args.num_inference_steps < 1:
         parser.error("--num_samples and --num_inference_steps must be positive")
     if not math.isfinite(args.guidance_scale) or not math.isfinite(args.shift) or args.shift <= 0:
