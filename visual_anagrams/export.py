@@ -10,7 +10,7 @@ from pathlib import Path
 import pickle
 import tempfile
 
-from PIL import GifImagePlugin, Image, ImageDraw, ImageFont, ImageOps
+from PIL import GifImagePlugin, Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 
 class _GifStreamWriter:
@@ -55,6 +55,7 @@ class AnimationOptions:
     hold: float = 1.0
     boomerang: bool = True
     labels: bool = False
+    borderless: bool = False
 
     def validate(self):
         if not 1 <= self.fps <= 60:
@@ -75,13 +76,16 @@ def add_export_args(parser):
     parser.add_argument("--animation_transition", type=float, default=1.5, help="Seconds per transition")
     parser.add_argument("--animation_hold", type=float, default=1.0, help="Seconds to pause at each view")
     parser.add_argument("--animation_one_way", action="store_true", help="Do not animate back to the original view")
+    parser.add_argument("--animation_borderless", action="store_true",
+                        help="Fill the GIF/video frame without outer padding; crop moving edges")
     parser.add_argument("--label_outputs", action="store_true", help="Overlay prompt labels on animations and save labeled PNG copies")
     return parser
 
 
 def options_from_args(args):
     return AnimationOptions(args.animation_fps, args.animation_size, args.animation_transition,
-                            args.animation_hold, not args.animation_one_way, args.label_outputs).validate()
+                            args.animation_hold, not args.animation_one_way, args.label_outputs,
+                            args.animation_borderless).validate()
 
 
 def animation_targets(view_names):
@@ -176,12 +180,22 @@ def animation_timeline(options):
     return timeline
 
 
-def _art_frame(image, view_name, view, t, side):
-    """Render actual rotation/flip geometry, without clipping the corners."""
+def _art_frame(image, view_name, view, t, side, *, borderless=False):
+    """Render a transform with either room for motion or a filled viewport."""
     if view_name in ("rotate_cw", "rotate_ccw", "rotate_180", "flip", "negate", "identity"):
         source = image.resize((side, side), Image.Resampling.LANCZOS)
         if view_name.startswith("rotate"):
             angle = {"rotate_cw": -90, "rotate_ccw": 90, "rotate_180": 180}[view_name]
+            if borderless:
+                # Zoom just enough to cover the viewport at every angle.
+                # Exact endpoints retain the whole image and its orientation.
+                radians = math.radians(angle * t)
+                scale = abs(math.cos(radians)) + abs(math.sin(radians))
+                extent = side if math.isclose(scale, 1.0) else math.ceil(side * scale) + 2
+                source = image.resize((extent, extent), Image.Resampling.LANCZOS).convert("RGBA")
+                source = source.rotate(angle * t, resample=Image.Resampling.BICUBIC, expand=True)
+                left, top = (source.width - side) // 2, (source.height - side) // 2
+                return source.crop((left, top, left + side, top + side))
             return source.convert("RGBA").rotate(angle * t, resample=Image.Resampling.BICUBIC, expand=True)
         if view_name == "flip":
             # A vertical flip turns around the horizontal axis; it is not a
@@ -197,6 +211,13 @@ def _art_frame(image, view_name, view, t, side):
         # Existing custom views retain their saved random permutations and
         # their own animation implementations (jigsaw, patch shuffle, etc.).
         frame = view.make_frame(image, t).convert("RGBA")
+        if borderless:
+            # Legacy custom animations add a 1.5x canvas around the original
+            # image. Crop its fixed image viewport, rather than detecting
+            # white pixels (which may belong to the artwork itself).
+            left, top = (frame.width - image.width) // 2, (frame.height - image.height) // 2
+            frame = frame.crop((left, top, left + image.width, top + image.height))
+            return frame.resize((side, side), Image.Resampling.LANCZOS)
         frame.thumbnail((round(side * 1.5), round(side * 1.5)), Image.Resampling.LANCZOS)
         return frame
     except NotImplementedError:
@@ -204,9 +225,15 @@ def _art_frame(image, view_name, view, t, side):
 
 
 def render_frame(image, view_name, view, t, options, prompt_1="", prompt_2=""):
-    side = round(options.size * 0.625)
-    art = _art_frame(image, view_name, view, t, side)
-    frame = Image.new("RGBA", (options.size, options.size), (245, 246, 249, 255))
+    side = options.size if options.borderless else round(options.size * 0.625)
+    art = _art_frame(image, view_name, view, t, side, borderless=options.borderless)
+    if options.borderless:
+        # A flip becomes edge-on midway through the animation. Image-backed
+        # fill avoids introducing a blank border while preserving that motion.
+        frame = image.resize((options.size, options.size), Image.Resampling.LANCZOS)
+        frame = frame.filter(ImageFilter.GaussianBlur(max(2, options.size / 32))).convert("RGBA")
+    else:
+        frame = Image.new("RGBA", (options.size, options.size), (245, 246, 249, 255))
     frame.alpha_composite(art, ((options.size - art.width) // 2, (options.size - art.height) // 2))
     frame = frame.convert("RGB")
     if options.labels:

@@ -54,6 +54,7 @@ def animation_arguments(settings):
             fps=int(settings.get("animation_fps", "24")), size=int(settings.get("animation_size", "768")),
             transition=float(settings.get("animation_transition", "1.5")), hold=float(settings.get("animation_hold", "1.0")),
             boomerang=settings.get("animation_loop", "yes") == "yes", labels=settings.get("labels", "no") == "yes",
+            borderless=settings.get("animation_borderless", "no") == "yes",
         ).validate()
     except (ValueError, TypeError) as exc:
         raise ValueError(f"Invalid animation settings: {exc}") from None
@@ -65,6 +66,8 @@ def animation_arguments(settings):
                  "--animation_hold", str(options.hold)]
     if not options.boomerang:
         arguments.append("--animation_one_way")
+    if options.borderless:
+        arguments.append("--animation_borderless")
     if options.labels:
         arguments.append("--label_outputs")
     return arguments
@@ -301,7 +304,7 @@ class AnagramApp(tk.Tk):
             "mode": "Turbo · r2-1000 (recommended)",
             "animation_auto": "no", "animation_format": "MP4 video", "animation_fps": "24",
             "animation_size": "768", "animation_transition": "1.5", "animation_hold": "1.0",
-            "animation_loop": "yes", "labels": "no",
+            "animation_loop": "yes", "labels": "no", "animation_borderless": "no",
         }.items()}
         self.standard_settings = {"steps": "100", "guidance": "3.0", "negative": "", "shift": "4.0"}
         self._styles()
@@ -329,6 +332,9 @@ class AnagramApp(tk.Tk):
         style.configure("Small.TButton", padding=(7, 3), font=("Segoe UI", 9))
         style.configure("TEntry", fieldbackground="#f7f8fc", padding=6)
         style.configure("TCombobox", fieldbackground="#f7f8fc", padding=5)
+        style.configure("TCheckbutton", background=PANEL, padding=(0, 5),
+                        indicatorsize=round(22 * self.ui_scale),
+                        indicatormargin=(0, 0, round(9 * self.ui_scale), 0))
         style.configure("TNotebook", background=BG, borderwidth=0)
         style.configure("TNotebook.Tab", padding=(14, 8))
         style.configure("Horizontal.TProgressbar", background=ACCENT, troughcolor="#e5e8f0", borderwidth=0)
@@ -411,8 +417,10 @@ class AnagramApp(tk.Tk):
                         onvalue="yes", offvalue="no").grid(row=7, column=0, columnspan=2, sticky="w", pady=5)
         ttk.Checkbutton(animation, text="Overlay prompt labels", variable=self.form["labels"],
                         onvalue="yes", offvalue="no", command=self.show_sample).grid(row=8, column=0, columnspan=2, sticky="w", pady=5)
-        ttk.Label(animation, text="Labels appear on GIF/MP4 and labeled PNG copies. Export a saved image with the button beside its preview.",
-                  style="Hint.TLabel", wraplength=round(370 * self.ui_scale)).grid(row=9, column=0, columnspan=2, sticky="w", pady=(5, 0))
+        ttk.Checkbutton(animation, text="Borderless / fill frame", variable=self.form["animation_borderless"],
+                        onvalue="yes", offvalue="no").grid(row=9, column=0, columnspan=2, sticky="w", pady=5)
+        ttk.Label(animation, text="Borderless removes outer padding and crops moving edges. Labels appear on GIF/MP4 and labeled PNG copies. Export saved images beside the preview.",
+                  style="Hint.TLabel", wraplength=round(370 * self.ui_scale)).grid(row=10, column=0, columnspan=2, sticky="w", pady=(5, 0))
         advanced = self._card(self.controls, "ADVANCED")
         advanced.columnconfigure(0, weight=1)
         for row, (label, key, choices) in enumerate((
