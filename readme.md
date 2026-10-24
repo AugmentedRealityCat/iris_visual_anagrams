@@ -1,5 +1,5 @@
 ﻿# Visual Anagrams with Iris 3B INT8
-<img width="2559" height="1864" alt="GUI_VA" src="https://github.com/user-attachments/assets/b66e69f7-a1b3-4d8a-aa66-82dfdde8730e" />
+<img width="2558" height="1851" alt="GUI_VA" src="https://github.com/user-attachments/assets/a9252156-b5cb-412d-8e1a-04ce054b48e2" />
 
 
 
