@@ -47,6 +47,21 @@ def test_invalid_view_parameter_is_rejected(settings):
         build_command(settings, [{"prompt": "a horse", "view": "patch_permute", "argument": "7"}])
 
 
+def test_gui_automatically_sums_components_and_rejects_wrong_settings(settings):
+    rows = [{"prompt": "a horse", "view": "low_pass", "argument": "2"},
+            {"prompt": "a landscape", "view": "high_pass", "argument": "2"}]
+    settings["reduction"] = "auto"
+    command, _ = build_command(settings, rows)
+    assert build_parser().parse_args(command[3:]).reduction == "sum"
+    settings["reduction"] = "mean"
+    with pytest.raises(ValueError, match="require sum"):
+        build_command(settings, rows)
+    settings["reduction"] = "auto"
+    rows[1]["argument"] = "3"
+    with pytest.raises(ValueError, match="matching filter"):
+        build_command(settings, rows)
+
+
 def test_turbo_choice_is_forwarded_to_cli(settings):
     settings.update(mode="Turbo · r1-1500", steps="4", guidance="1", negative="")
     command, _ = build_command(settings, [{"prompt": "a horse", "view": "identity"}])
@@ -87,6 +102,7 @@ def test_turbo_r2_defaults_and_explicit_standard_command(tmp_path):
     try:
         assert app.form["mode"].get() == "Turbo · r2-1000 (recommended)"
         assert app.form["steps"].get() == "4" and app.form["guidance"].get() == "1.0"
+        assert app.form["reduction"].get() == "auto"
         assert app.guidance_entry.instate(["disabled"])
         app.form["output"].set(str(tmp_path))
         command, _ = build_command({key: value.get() for key, value in app.form.items()}, [row.values() for row in app.rows])
