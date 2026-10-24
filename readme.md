@@ -26,7 +26,13 @@ This is an experimental adaptation of [Visual Anagrams](https://dangeng.github.i
 
 ## Windows setup
 
-Requires Git, Python 3.11 or newer (3.12 recommended), and an NVIDIA GPU with BF16 support and a CUDA 12.8 compatible driver. Install [uv](https://docs.astral.sh/uv/) if needed with `python -m pip install uv`, then run in PowerShell:
+**Verified on an NVIDIA GeForce RTX 3060 with 12 GB VRAM.** The example gallery
+was generated on this card at 1024 × 1024 using Iris INT8 and Turbo r2.
+
+For the supplied Windows setup script, install Git, Python 3.11 or newer (the
+script defaults to 3.12), [uv](https://docs.astral.sh/uv/), and an NVIDIA driver
+compatible with the script's CUDA 12.8 PyTorch build. Install uv if needed with
+`python -m pip install uv`, then run in PowerShell:
 
 ```powershell
 .\setup-iris.ps1
@@ -36,7 +42,12 @@ The script creates `.venv`, installs CUDA PyTorch and the inference dependencies
 
 The first generation downloads approximately **3.23 GB of Iris weights plus 8.88 GB of Qwen text-encoder weights** to the Hugging Face cache. Downloads are reused on later runs. No DeepFloyd license acceptance is needed for Iris. Allow additional disk space for Python/PyTorch and download caches.
 
-The INT8 model still computes with BF16 on CUDA; it is weight-only quantization. Each view and each guidance branch runs separately with batch size one, and Qwen is released before Iris is loaded. This reduces memory use at the cost of speed. The model publisher measured about 10.7 GiB peak for its own single-prompt implementation on a 24 GB RTX 3090; that is not a guarantee for a 12 GB GPU or this multi-view sampler. Close other GPU-heavy applications if necessary. `--text_encoder_device cpu` moves prompt encoding to RAM if that phase runs out of VRAM.
+The INT8 model uses compressed weights with BF16 computation on CUDA. Views
+are evaluated separately with batch size one, and the Qwen text encoder is
+released before Iris is loaded onto the GPU. The downloaded weight sizes above
+describe disk usage; the two models do not occupy VRAM together. This setup has
+completed multi-view generation on the RTX 3060 12 GB. `--text_encoder_device cpu`
+also provides an option to encode prompts using system RAM.
 
 ## Generate an illusion
 
