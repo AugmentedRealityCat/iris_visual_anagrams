@@ -56,6 +56,8 @@ def get_views(view_names, view_args=None):
     views = []
     if view_args is None:
         view_args = [None for _ in view_names]
+    elif len(view_args) != len(view_names):
+        raise ValueError("--view_args must have one entry per view")
 
     for view_name, view_arg in zip(view_names, view_args):
         if view_name == 'patch_permute':

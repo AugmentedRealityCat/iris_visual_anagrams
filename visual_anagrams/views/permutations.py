@@ -221,7 +221,17 @@ def make_jigsaw_perm(size, seed=0):
     #im = np.array(im)
     #Image.fromarray(im.reshape(-1, 3)[perm].reshape(size,size,3)).save('test.png')
 
-    return torch.tensor(perm), (piece_perms, edge_swaps)
+    # The rasterized piece masks can contain a boundary pixel that maps to
+    # an already occupied destination (the 1024 masks have such a defect).
+    # Reassign duplicate destinations to the missing ones so this remains
+    # a true permutation and its inverse never reads uninitialized indices.
+    perm = np.asarray(perm, dtype=np.int64)
+    destinations, first_indices = np.unique(perm, return_index=True)
+    if len(destinations) != size * size:
+        duplicate_indices = np.setdiff1d(np.arange(size * size), first_indices)
+        missing = np.setdiff1d(np.arange(size * size), destinations)
+        perm[duplicate_indices] = missing
+    return torch.from_numpy(perm), (piece_perms, edge_swaps)
 
 #for i in range(100):
     #make_jigsaw_perm(64, seed=i)

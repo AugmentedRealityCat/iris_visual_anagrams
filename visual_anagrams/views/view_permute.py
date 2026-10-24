@@ -78,7 +78,14 @@ class PermuteView(BaseView):
 
     def inverse_view(self, noise):
         im_size = noise.shape[-1]
-        perm_inv = self.perm_64_inv if im_size == 64 else self.perm_256_inv
+        if im_size == 64:
+            perm_inv = self.perm_64_inv
+        elif im_size == 256:
+            perm_inv = self.perm_256_inv
+        elif im_size == 1024:
+            perm_inv = self.perm_1024_inv
+        else:
+            raise ValueError("Invalid image size. Must be size 64, 256, or 1024.")
         num_patches = im_size
 
         # Permute every pixel in the image

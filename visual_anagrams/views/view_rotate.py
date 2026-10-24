@@ -1,7 +1,6 @@
 from PIL import Image
 
-import torchvision.transforms.functional as TF
-from torchvision.transforms import InterpolationMode
+import torch
 
 from .view_base import BaseView
 
@@ -11,11 +10,13 @@ class Rotate90CWView(BaseView):
         pass
 
     def view(self, im):
-        # TODO: Is nearest-exact better?
-        return TF.rotate(im, -90, interpolation=InterpolationMode.NEAREST)
+        # Quarter turns are exact permutations. An affine sampling grid can
+        # lose pixel coordinates under CUDA BF16 autocast at 1024px, breaking
+        # inverse alignment and leaving noise around the central region.
+        return torch.rot90(im, k=-1, dims=(-2, -1))
 
     def inverse_view(self, noise):
-        return TF.rotate(noise, 90, interpolation=InterpolationMode.NEAREST)
+        return torch.rot90(noise, k=1, dims=(-2, -1))
 
     def make_frame(self, im, t):
         im_size = im.size[0]
@@ -38,11 +39,10 @@ class Rotate90CCWView(BaseView):
         pass
 
     def view(self, im):
-        # TODO: Is nearest-exact better?
-        return TF.rotate(im, 90, interpolation=InterpolationMode.NEAREST)
+        return torch.rot90(im, k=1, dims=(-2, -1))
 
     def inverse_view(self, noise):
-        return TF.rotate(noise, -90, interpolation=InterpolationMode.NEAREST)
+        return torch.rot90(noise, k=-1, dims=(-2, -1))
 
     def make_frame(self, im, t):
         im_size = im.size[0]
@@ -65,11 +65,10 @@ class Rotate180View(BaseView):
         pass
 
     def view(self, im):
-        # TODO: Is nearest-exact better?
-        return TF.rotate(im, 180, interpolation=InterpolationMode.NEAREST)
+        return torch.rot90(im, k=2, dims=(-2, -1))
 
     def inverse_view(self, noise):
-        return TF.rotate(noise, -180, interpolation=InterpolationMode.NEAREST)
+        return torch.rot90(noise, k=2, dims=(-2, -1))
 
     def make_frame(self, im, t):
         im_size = im.size[0]

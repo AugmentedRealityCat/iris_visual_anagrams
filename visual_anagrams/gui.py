@@ -1,0 +1,763 @@
+"""Tk desktop UI; generation runs in a cancellable, isolated subprocess.
+
+No model imports or downloads happen when the window opens. Tk widgets are
+only touched on the main thread; the worker forwards subprocess output.
+"""
+
+from __future__ import annotations
+
+import codecs
+import math
+import os
+from pathlib import Path
+import queue
+import re
+import subprocess
+import sys
+import threading
+import tkinter as tk
+from tkinter import filedialog, messagebox, scrolledtext, ttk
+
+from PIL import Image, ImageTk
+
+ROOT = Path(__file__).resolve().parents[1]
+VIEWS = {
+    "Original": "identity", "Rotate 90° right": "rotate_cw",
+    "Rotate 90° left": "rotate_ccw", "Rotate 180°": "rotate_180",
+    "Flip vertically": "flip", "Invert colors": "negate",
+    "Inner circle": "inner_circle", "Jigsaw": "jigsaw",
+    "Shuffle patches": "patch_permute", "Shuffle pixel blocks": "pixel_permute",
+    "Square hinge": "square_hinge", "Skew": "skew",
+    "Low frequencies": "low_pass", "High frequencies": "high_pass",
+    "Grayscale component": "grayscale", "Color component": "color", "Scale component": "scale",
+}
+VIEW_DEFAULTS = {"patch_permute": "8", "pixel_permute": "64", "skew": "1.5",
+                 "low_pass": "2.0", "high_pass": "2.0", "scale": "0.5"}
+VIEW_HINTS = {"patch_permute": "Patches per side: 1, 2, 4, 8, 16, 32, or 64.",
+              "pixel_permute": "Blocks per side: 1, 2, 4, 8, 16, 32, or 64.",
+              "skew": "Parameter controls the skew strength.",
+              "low_pass": "Parameter controls blur sigma. Use Sum to combine components.",
+              "high_pass": "Parameter controls blur sigma. Use Sum to combine components.",
+              "scale": "Parameter multiplies this prompt's contribution. Use Sum for components.",
+              "grayscale": "Use Sum to combine grayscale and color components.",
+              "color": "Use Sum to combine grayscale and color components."}
+BG, PANEL, INK, MUTED, ACCENT = "#f3f5f8", "#ffffff", "#202b3c", "#637086", "#5146d9"
+GENERATION_MODES = {"Turbo · r2-1000 (recommended)": "r2-1000", "Turbo · r1-1500": "r1-1500", "Standard Iris": None}
+ANIMATION_FORMATS = {"MP4 video": ["mp4"], "Animated GIF": ["gif"], "GIF + MP4": ["gif", "mp4"]}
+
+
+def animation_arguments(settings):
+    from visual_anagrams.export import AnimationOptions
+
+    try:
+        options = AnimationOptions(
+            fps=int(settings.get("animation_fps", "24")), size=int(settings.get("animation_size", "768")),
+            transition=float(settings.get("animation_transition", "1.5")), hold=float(settings.get("animation_hold", "1.0")),
+            boomerang=settings.get("animation_loop", "yes") == "yes", labels=settings.get("labels", "no") == "yes",
+        ).validate()
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"Invalid animation settings: {exc}") from None
+    choice = settings.get("animation_format", "MP4 video")
+    if choice not in ANIMATION_FORMATS:
+        raise ValueError("Choose MP4, GIF, or both for animation export.")
+    arguments = ["--animation_formats", *ANIMATION_FORMATS[choice], "--animation_fps", str(options.fps),
+                 "--animation_size", str(options.size), "--animation_transition", str(options.transition),
+                 "--animation_hold", str(options.hold)]
+    if not options.boomerang:
+        arguments.append("--animation_one_way")
+    if options.labels:
+        arguments.append("--label_outputs")
+    return arguments
+
+
+def build_export_command(settings, image_path, *, python=None, root=ROOT):
+    image = Path(image_path).resolve()
+    metadata = image.parent.parent / "metadata.pkl"
+    if not image.is_file() or not metadata.is_file():
+        raise ValueError("Choose a saved result with its run's metadata.pkl file so the original transformations can be animated.")
+    return [python or sys.executable, "-u", str(Path(root) / "export_animation.py"),
+            "--im_path", str(image), "--metadata_path", str(metadata), *animation_arguments(settings)]
+
+
+def build_command(settings, rows, *, python=None, root=ROOT):
+    """Validate form values and build an argument list, never a shell string."""
+    name = settings["name"].strip()
+    if not name or name in (".", "..") or any(char in name for char in '<>:"/\\|?*'):
+        raise ValueError("Give the run a name without folder separators or special filename characters.")
+    if not rows or any(not row["prompt"].strip() for row in rows):
+        raise ValueError("Write a prompt for every view.")
+    integers = {}
+    for key, label, minimum in (("steps", "Steps", 1), ("samples", "Samples", 1), ("seed", "Seed", 0)):
+        try:
+            integers[key] = int(str(settings[key]))
+        except ValueError:
+            raise ValueError(f"{label} must be a whole number.") from None
+        if integers[key] < minimum:
+            raise ValueError(f"{label} must be at least {minimum}.")
+    if integers["seed"] + integers["samples"] > 2**63:
+        raise ValueError("Sample seeds must be smaller than 2**63.")
+    numbers = {}
+    for key in ("guidance", "shift"):
+        try:
+            numbers[key] = float(settings[key])
+        except ValueError:
+            raise ValueError(f"{key.capitalize()} must be a number.") from None
+        if not math.isfinite(numbers[key]) or (key == "shift" and numbers[key] <= 0):
+            raise ValueError(f"{key.capitalize()} must be finite" + (" and positive." if key == "shift" else "."))
+    if settings["reduction"] not in ("mean", "sum", "alternate"):
+        raise ValueError("Choose Mean, Sum, or Alternate for combining views.")
+    if settings["device"] not in ("cuda", "cpu") or settings["text_device"] not in ("cuda", "cpu"):
+        raise ValueError("Choose a valid generation and text encoding device.")
+    if str(settings["order"]) not in ("1", "2"):
+        raise ValueError("Solver order must be 1 or 2.")
+    if not settings["output"].strip():
+        raise ValueError("Choose an output folder.")
+    mode = settings.get("mode", "Standard Iris")
+    if mode not in GENERATION_MODES:
+        raise ValueError("Choose a valid generation mode.")
+    adapter = GENERATION_MODES[mode]
+    if adapter and (numbers["guidance"] != 1.0 or settings["negative"].strip()):
+        raise ValueError("Turbo has built-in guidance. Set Guidance to 1 and leave the negative prompt empty.")
+
+    output = Path(settings["output"]).expanduser().resolve()
+    destination = output / name
+    suffix = 2
+    while destination.exists():
+        destination = output / f"{name}_{suffix}"
+        suffix += 1
+
+    view_names, view_args = [], []
+    for row in rows:
+        view = row["view"]
+        if view not in VIEWS.values():
+            raise ValueError(f"Unknown transformation: {view}")
+        arg = row.get("argument", "").strip() or VIEW_DEFAULTS.get(view, "0")
+        if view in VIEW_DEFAULTS:
+            try:
+                numeric = float(arg)
+                if not math.isfinite(numeric):
+                    raise ValueError
+                if view in ("patch_permute", "pixel_permute"):
+                    if arg not in ("1", "2", "4", "8", "16", "32", "64"):
+                        raise ValueError
+                if view in ("low_pass", "high_pass") and numeric <= 0:
+                    raise ValueError
+            except ValueError:
+                raise ValueError(f"Invalid parameter for {view}. {VIEW_HINTS[view]}") from None
+        view_names.append(view)
+        view_args.append(arg)
+
+    command = [python or sys.executable, "-u", str(Path(root) / "generate.py"),
+               "--name", destination.name, "--save_dir", str(output),
+               "--prompts", *[row["prompt"].strip() for row in rows],
+               "--views", *view_names, "--view_args", *view_args,
+               "--style", settings["style"].strip(), "--negative_prompt", settings["negative"].strip(),
+               "--num_inference_steps", str(integers["steps"]), "--num_samples", str(integers["samples"]),
+               "--seed", str(integers["seed"]), "--guidance_scale", str(numbers["guidance"]),
+               "--shift", str(numbers["shift"]), "--solver_order", str(settings["order"]),
+               "--reduction", settings["reduction"], "--device", settings["device"],
+               "--text_encoder_device", settings["text_device"]]
+    if adapter:
+        command.extend(["--turbo", "--turbo_adapter", adapter])
+    else:
+        command.append("--standard")
+    if settings.get("animation_auto", "no") == "yes":
+        from visual_anagrams.export import animation_targets
+
+        animation_targets(view_names)
+        command.extend(animation_arguments(settings))
+    elif settings.get("labels", "no") == "yes":
+        command.append("--label_outputs")
+    for field, flag in (("model_path", "--model_path"), ("text_path", "--text_encoder_path")):
+        if settings.get(field, "").strip():
+            folder = Path(settings[field]).expanduser().resolve()
+            if not folder.is_dir():
+                raise ValueError(f"Local model folder does not exist: {folder}")
+            command.extend([flag, str(folder)])
+    return command, destination
+
+
+def worker_python():
+    # pythonw launches the GUI without a console, while python guarantees
+    # stdout/stderr handles for the generation worker on Windows.
+    executable = Path(sys.executable)
+    return str(executable.with_name("python.exe")) if executable.name.lower() == "pythonw.exe" else str(executable)
+
+
+class GenerationJob:
+    """One subprocess at a time, with output events consumed by Tk."""
+
+    def __init__(self):
+        self.events = queue.Queue()
+        self.process = None
+        self.cancelled = False
+
+    def start(self, command, cwd=ROOT):
+        if self.process is not None and self.process.poll() is None:
+            raise RuntimeError("Generation is already running.")
+        self.cancelled = False
+        env = dict(os.environ, PYTHONUNBUFFERED="1", PYTHONIOENCODING="utf-8", TOKENIZERS_PARALLELISM="false")
+        self.process = subprocess.Popen(
+            command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL, env=env,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+        )
+        threading.Thread(target=self._read, args=(self.process,), daemon=True).start()
+
+    def _read(self, process):
+        decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+        try:
+            with process.stdout:
+                while chunk := process.stdout.read1(4096):
+                    self.events.put(("log", decoder.decode(chunk)))
+            tail = decoder.decode(b"", final=True)
+            if tail:
+                self.events.put(("log", tail))
+        finally:
+            self.events.put(("exit", process.wait()))
+
+    def cancel(self):
+        if self.process is not None and self.process.poll() is None:
+            self.cancelled = True
+            try:
+                self.process.terminate()
+            except ProcessLookupError:
+                pass
+
+
+class ViewRow:
+    def __init__(self, parent, index, remove, prompt="", label="Original"):
+        self.frame = ttk.Frame(parent, style="Card.TFrame", padding=12)
+        self.frame.columnconfigure(0, weight=1)
+        self.title = ttk.Label(self.frame, text=f"VIEW {index}", style="Eyebrow.TLabel")
+        self.title.grid(row=0, column=0, sticky="w", pady=(0, 8))
+        ttk.Button(self.frame, text="Remove", command=lambda: remove(self), style="Small.TButton").grid(row=0, column=1)
+        self.prompt = tk.Text(self.frame, height=2, wrap="word", font=("Segoe UI", 11),
+                              bg="#f7f8fc", fg=INK, relief="flat", padx=10, pady=8, undo=True,
+                              highlightthickness=1, highlightbackground="#dce1eb", highlightcolor=ACCENT)
+        self.prompt.insert("1.0", prompt)
+        self.prompt.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 9))
+        options = ttk.Frame(self.frame, style="Card.TFrame")
+        options.grid(row=2, column=0, columnspan=2, sticky="ew")
+        options.columnconfigure(0, weight=1)
+        self.view = tk.StringVar(value=label)
+        combo = ttk.Combobox(options, textvariable=self.view, values=list(VIEWS), state="readonly", width=22)
+        combo.grid(row=0, column=0, sticky="ew")
+        combo.bind("<<ComboboxSelected>>", self._changed)
+        self.argument = tk.StringVar()
+        self.arg_entry = ttk.Entry(options, textvariable=self.argument, width=7)
+        self.arg_entry.grid(row=0, column=1, padx=(8, 0))
+        self.hint = ttk.Label(self.frame, style="Hint.TLabel", wraplength=390)
+        self.hint.grid(row=3, column=0, columnspan=2, sticky="w", pady=(5, 0))
+        self._changed()
+
+    def _changed(self, _event=None):
+        key = VIEWS[self.view.get()]
+        self.argument.set(VIEW_DEFAULTS.get(key, ""))
+        if key in VIEW_DEFAULTS:
+            self.arg_entry.grid()
+        else:
+            self.arg_entry.grid_remove()
+        self.hint.configure(text=VIEW_HINTS.get(key, ""))
+
+    def values(self):
+        return {"prompt": self.prompt.get("1.0", "end").strip(),
+                "view": VIEWS[self.view.get()], "argument": self.argument.get()}
+
+
+class AnagramApp(tk.Tk):
+    def __init__(self):
+        if sys.platform == "win32":
+            import ctypes
+            try:
+                ctypes.windll.shcore.SetProcessDpiAwareness(1)
+            except (AttributeError, OSError):
+                pass
+        super().__init__()
+        self.title("Visual Anagrams · Iris Studio")
+        self.ui_scale = max(1.0, self.winfo_fpixels("1i") / 96)
+        width = min(round(1280 * self.ui_scale), self.winfo_screenwidth() - 80)
+        height = min(round(900 * self.ui_scale), self.winfo_screenheight() - 120)
+        self.geometry(f"{width}x{height}")
+        self.minsize(min(round(1000 * self.ui_scale), width), min(round(720 * self.ui_scale), height))
+        self.configure(bg=BG)
+        self.protocol("WM_DELETE_WINDOW", self.close)
+        self.job = GenerationJob()
+        self.running = False
+        self.task = "generation"
+        self.output_dir = None
+        self.images = []
+        self.rows = []
+        self.log_buffer = ""
+        self.current_sample = 1
+        self.form = {key: tk.StringVar(value=value) for key, value in {
+            "name": "iris-illusion", "output": str(ROOT / "results"), "style": "an oil painting of",
+            "negative": "", "steps": "4", "samples": "1", "guidance": "1.0", "seed": "0",
+            "reduction": "mean", "shift": "4.0", "order": "2", "device": "cuda",
+            "text_device": "cuda", "model_path": "", "text_path": "",
+            "mode": "Turbo · r2-1000 (recommended)",
+            "animation_auto": "no", "animation_format": "MP4 video", "animation_fps": "24",
+            "animation_size": "768", "animation_transition": "1.5", "animation_hold": "1.0",
+            "animation_loop": "yes", "labels": "no",
+        }.items()}
+        self.standard_settings = {"steps": "100", "guidance": "3.0", "negative": "", "shift": "4.0"}
+        self._styles()
+        self._layout()
+        self.mode_changed()
+        self.add_view("a snowy mountain village", "Original")
+        self.add_view("a horse", "Rotate 90° right")
+        self.after(100, self.poll)
+
+    def _styles(self):
+        style = ttk.Style(self)
+        style.theme_use("clam")
+        style.configure(".", font=("Segoe UI", 10), foreground=INK, background=BG)
+        style.configure("TFrame", background=BG)
+        style.configure("Card.TFrame", background=PANEL)
+        style.configure("TLabel", background=PANEL, padding=0)
+        style.configure("Title.TLabel", background=BG, font=("Segoe UI", 23, "bold"))
+        style.configure("Subtitle.TLabel", background=BG, foreground=MUTED)
+        style.configure("Eyebrow.TLabel", foreground=ACCENT, font=("Segoe UI", 9, "bold"))
+        style.configure("Hint.TLabel", foreground=MUTED, font=("Segoe UI", 9))
+        style.configure("TButton", padding=(12, 7), background="#e6e9f0", borderwidth=0)
+        style.map("TButton", background=[("active", "#d8ddeb")])
+        style.configure("Accent.TButton", background=ACCENT, foreground="white", font=("Segoe UI", 11, "bold"))
+        style.map("Accent.TButton", background=[("disabled", "#b9b6df"), ("active", "#4035c5")])
+        style.configure("Small.TButton", padding=(7, 3), font=("Segoe UI", 9))
+        style.configure("TEntry", fieldbackground="#f7f8fc", padding=6)
+        style.configure("TCombobox", fieldbackground="#f7f8fc", padding=5)
+        style.configure("TNotebook", background=BG, borderwidth=0)
+        style.configure("TNotebook.Tab", padding=(14, 8))
+        style.configure("Horizontal.TProgressbar", background=ACCENT, troughcolor="#e5e8f0", borderwidth=0)
+
+    def _layout(self):
+        header = ttk.Frame(self, padding=(24, 18))
+        header.pack(fill="x")
+        ttk.Label(header, text="Visual Anagrams", style="Title.TLabel").pack(side="left")
+        ttk.Label(header, text="IRIS 3B INT8  /  1024 × 1024", style="Subtitle.TLabel").pack(side="right")
+        ttk.Label(self, text="One image. Different perspectives. Describe what each view should reveal.",
+                  style="Subtitle.TLabel").pack(anchor="w", padx=25, pady=(0, 16))
+
+        body = ttk.Frame(self, padding=(20, 0, 20, 16))
+        body.pack(fill="both", expand=True)
+        panel_width = round(440 * self.ui_scale)
+        body.columnconfigure(0, weight=0, minsize=panel_width)
+        body.columnconfigure(1, weight=1)
+        body.rowconfigure(0, weight=1)
+        left = ttk.Frame(body, width=panel_width)
+        left.grid(row=0, column=0, sticky="nsew", padx=(0, 18))
+        left.columnconfigure(0, weight=1)
+        left.rowconfigure(0, weight=1)
+        self.form_canvas = tk.Canvas(left, width=panel_width, bg=BG, highlightthickness=0)
+        self.form_canvas.grid(row=0, column=0, sticky="nsew")
+        scrollbar = ttk.Scrollbar(left, orient="vertical", command=self.form_canvas.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        self.form_canvas.configure(yscrollcommand=scrollbar.set)
+        self.controls = ttk.Frame(self.form_canvas)
+        window = self.form_canvas.create_window((0, 0), window=self.controls, anchor="nw")
+        self.controls.bind("<Configure>", lambda _: self.form_canvas.configure(scrollregion=self.form_canvas.bbox("all")))
+        self.form_canvas.bind("<Configure>", lambda event: self.form_canvas.itemconfigure(window, width=event.width))
+        self.bind_all("<MouseWheel>", self._scroll)
+
+        self.view_frame = ttk.Frame(self.controls)
+        self.view_frame.pack(fill="x")
+        ttk.Button(self.controls, text="+ Add another view", command=self.add_view).pack(fill="x", pady=(0, 12))
+        settings = self._card(self.controls, "GENERATION")
+        settings.columnconfigure((0, 1), weight=1)
+        mode_frame = ttk.Frame(settings, style="Card.TFrame")
+        mode_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 12))
+        mode_frame.columnconfigure(0, weight=1)
+        ttk.Label(mode_frame, text="Generation mode").grid(row=0, column=0, sticky="w")
+        mode_combo = ttk.Combobox(mode_frame, textvariable=self.form["mode"], values=list(GENERATION_MODES), state="readonly")
+        mode_combo.grid(row=1, column=0, sticky="ew", pady=(4, 4))
+        mode_combo.bind("<<ComboboxSelected>>", self.mode_changed)
+        self.mode_hint = ttk.Label(mode_frame, text="Standard sampling with adjustable guidance.", style="Hint.TLabel", wraplength=round(380 * self.ui_scale))
+        self.mode_hint.grid(row=2, column=0, sticky="w")
+        ttk.Label(settings, text="Shared style").grid(row=2, column=0, columnspan=2, sticky="w")
+        ttk.Combobox(settings, textvariable=self.form["style"], values=["an oil painting of", "a pencil sketch of", "a watercolor painting of", "a lithograph of", "a photo of", ""]).grid(row=3, column=0, columnspan=2, sticky="ew", pady=(4, 10))
+        for index, (key, label) in enumerate((("steps", "Steps"), ("guidance", "Guidance"), ("samples", "Samples"), ("seed", "Seed"))):
+            row, col = 4 + (index // 2) * 2, index % 2
+            ttk.Label(settings, text=label).grid(row=row, column=col, sticky="w", padx=(0, 8))
+            entry = ttk.Entry(settings, textvariable=self.form[key], width=12)
+            entry.grid(row=row + 1, column=col, sticky="ew", padx=(0, 8), pady=(4, 10))
+            if key == "guidance":
+                self.guidance_entry = entry
+        ttk.Label(settings, text="Negative prompt").grid(row=8, column=0, columnspan=2, sticky="w")
+        self.negative_entry = ttk.Entry(settings, textvariable=self.form["negative"])
+        self.negative_entry.grid(row=9, column=0, columnspan=2, sticky="ew", pady=(4, 10))
+        ttk.Label(settings, text="Combine views").grid(row=10, column=0, sticky="w")
+        ttk.Combobox(settings, textvariable=self.form["reduction"], values=["mean", "alternate", "sum"], state="readonly", width=16).grid(row=10, column=1, sticky="ew")
+
+        output = self._card(self.controls, "SAVE RESULTS")
+        output.columnconfigure(0, weight=1)
+        self._entry(output, "Run name", "name", 1)
+        self._folder(output, "Output folder", "output", 3)
+        animation = self._card(self.controls, "ANIMATION & LABELS")
+        animation.columnconfigure((0, 1), weight=1)
+        ttk.Checkbutton(animation, text="Automatically animate new images", variable=self.form["animation_auto"],
+                        onvalue="yes", offvalue="no").grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 8))
+        ttk.Label(animation, text="Format").grid(row=2, column=0, sticky="w")
+        ttk.Combobox(animation, textvariable=self.form["animation_format"], values=list(ANIMATION_FORMATS), state="readonly",
+                     width=16).grid(row=2, column=1, sticky="ew", pady=4)
+        for index, (key, label) in enumerate((("animation_size", "Animation size (px)"), ("animation_fps", "Frames per second"),
+                                               ("animation_transition", "Transition (seconds)"), ("animation_hold", "Pause per view (seconds)"))):
+            row, col = 3 + (index // 2) * 2, index % 2
+            ttk.Label(animation, text=label).grid(row=row, column=col, sticky="w", pady=(6, 0))
+            ttk.Entry(animation, textvariable=self.form[key], width=10).grid(row=row + 1, column=col, sticky="ew", padx=(0, 8), pady=(4, 6))
+        ttk.Checkbutton(animation, text="Animate back to the original view", variable=self.form["animation_loop"],
+                        onvalue="yes", offvalue="no").grid(row=7, column=0, columnspan=2, sticky="w", pady=5)
+        ttk.Checkbutton(animation, text="Overlay prompt labels", variable=self.form["labels"],
+                        onvalue="yes", offvalue="no", command=self.show_sample).grid(row=8, column=0, columnspan=2, sticky="w", pady=5)
+        ttk.Label(animation, text="Labels appear on GIF/MP4 and labeled PNG copies. Export a saved image with the button beside its preview.",
+                  style="Hint.TLabel", wraplength=round(370 * self.ui_scale)).grid(row=9, column=0, columnspan=2, sticky="w", pady=(5, 0))
+        advanced = self._card(self.controls, "ADVANCED")
+        advanced.columnconfigure(0, weight=1)
+        for row, (label, key, choices) in enumerate((
+            ("Generation device", "device", ["cuda", "cpu"]),
+            ("Text encoding device", "text_device", ["cuda", "cpu"]),
+            ("Solver order", "order", ["2", "1"]),
+        ), start=1):
+            ttk.Label(advanced, text=label).grid(row=row, column=0, sticky="w", pady=5)
+            combo = ttk.Combobox(advanced, textvariable=self.form[key], values=choices, state="readonly", width=10)
+            combo.grid(row=row, column=1, sticky="e")
+            if key == "order":
+                self.order_combo = combo
+        self._entry(advanced, "Flow shift", "shift", 4)
+        self._folder(advanced, "Local Iris model (optional)", "model_path", 6)
+        self._folder(advanced, "Local Qwen encoder (optional)", "text_path", 8)
+        ttk.Label(advanced, text="Choose CPU text encoding if GPU memory is tight.", style="Hint.TLabel", wraplength=380).grid(row=10, column=0, columnspan=2, sticky="w", pady=(10, 0))
+
+        actions = ttk.Frame(left, padding=(0, 12, 12, 0))
+        actions.grid(row=1, column=0, columnspan=2, sticky="ew")
+        self.generate_button = ttk.Button(actions, text="Generate illusion", style="Accent.TButton", command=self.generate)
+        self.generate_button.pack(side="left", fill="x", expand=True)
+        self.cancel_button = ttk.Button(actions, text="Cancel", command=self.cancel, state="disabled")
+        self.cancel_button.pack(side="right", padx=(8, 0))
+
+        right = ttk.Frame(body)
+        right.grid(row=0, column=1, sticky="nsew")
+        right.columnconfigure(0, weight=1)
+        right.rowconfigure(2, weight=1, minsize=100)
+        toolbar = ttk.Frame(right)
+        toolbar.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        ttk.Label(toolbar, text="PREVIEW", style="Subtitle.TLabel").pack(side="left")
+        ttk.Button(toolbar, text="Open results", command=self.open_results, style="Small.TButton").pack(side="right")
+        ttk.Button(toolbar, text="Load result…", command=self.load_result, style="Small.TButton").pack(side="right", padx=6)
+        self.play_button = ttk.Button(toolbar, text="Play animation", command=self.play_animation, style="Small.TButton", state="disabled")
+        self.play_button.pack(side="right", padx=6)
+        self.export_button = ttk.Button(toolbar, text="Export animation", command=self.export_animation, style="Small.TButton")
+        self.export_button.pack(side="right")
+        self.selection = tk.StringVar()
+        self.sample_picker = ttk.Combobox(right, textvariable=self.selection, state="readonly")
+        self.sample_picker.grid(row=1, column=0, sticky="ew", pady=(0, 10))
+        self.sample_picker.bind("<<ComboboxSelected>>", lambda _: self.show_sample())
+        self.notebook = ttk.Notebook(right)
+        self.notebook.grid(row=2, column=0, sticky="nsew")
+        self.preview_canvases = []
+        self.preview_images = [None, None]
+        self.preview_photos = [None, None]
+        for title in ("Original image", "All views"):
+            canvas = tk.Canvas(self.notebook, background="#e8ecf3", highlightthickness=0)
+            self.notebook.add(canvas, text=title)
+            self.preview_canvases.append(canvas)
+            canvas.bind("<Configure>", lambda _event: self.render_previews())
+        self.notebook.bind("<<NotebookTabChanged>>", lambda _: self.after_idle(self.render_previews))
+        self.status = tk.StringVar(value="Ready to create")
+        ttk.Label(right, textvariable=self.status, style="Subtitle.TLabel", wraplength=round(600 * self.ui_scale)).grid(row=3, column=0, sticky="w", pady=(12, 6))
+        self.progress = ttk.Progressbar(right, mode="indeterminate")
+        self.progress.grid(row=4, column=0, sticky="ew", pady=(0, 10))
+        self.log = scrolledtext.ScrolledText(right, height=7, state="disabled", wrap="word",
+                                            font=("Consolas", 9), bg="#202b3c", fg="#d7deed",
+                                            relief="flat", padx=12, pady=10)
+        self.log.grid(row=5, column=0, sticky="ew")
+        ttk.Label(right, text="The first run downloads the Iris and Qwen weights. Saved images appear here when each sample finishes.",
+                  style="Subtitle.TLabel", wraplength=round(600 * self.ui_scale)).grid(row=6, column=0, sticky="w", pady=(8, 0))
+        self.after_idle(self.render_previews)
+
+    def _card(self, parent, title):
+        frame = ttk.Frame(parent, style="Card.TFrame", padding=12)
+        frame.pack(fill="x", pady=(0, 12))
+        ttk.Label(frame, text=title, style="Eyebrow.TLabel").grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 12))
+        return frame
+
+    def mode_changed(self, _event=None):
+        turbo = GENERATION_MODES[self.form["mode"].get()] is not None
+        if turbo and self.standard_settings is None:
+            self.standard_settings = {key: self.form[key].get() for key in ("steps", "guidance", "negative", "shift")}
+            for key, value in {"steps": "4", "guidance": "1.0", "negative": "", "shift": "4.0"}.items():
+                self.form[key].set(value)
+        elif not turbo and self.standard_settings is not None:
+            for key, value in self.standard_settings.items():
+                self.form[key].set(value)
+            self.standard_settings = None
+        self.guidance_entry.configure(state="disabled" if turbo else "normal")
+        self.negative_entry.configure(state="disabled" if turbo else "normal")
+        self.order_combo.configure(state="disabled" if turbo else "readonly")
+        self.mode_hint.configure(text=("Four-step default with built-in guidance. Downloads the selected LoRA on first use."
+                                       if turbo else "Standard sampling with adjustable guidance."))
+
+    def _entry(self, parent, label, key, row):
+        ttk.Label(parent, text=label).grid(row=row, column=0, columnspan=2, sticky="w")
+        ttk.Entry(parent, textvariable=self.form[key]).grid(row=row + 1, column=0, columnspan=2, sticky="ew", pady=(4, 10))
+
+    def _folder(self, parent, label, key, row):
+        ttk.Label(parent, text=label).grid(row=row, column=0, columnspan=2, sticky="w")
+        ttk.Entry(parent, textvariable=self.form[key]).grid(row=row + 1, column=0, sticky="ew", pady=(4, 10))
+        ttk.Button(parent, text="Browse", style="Small.TButton", command=lambda: self.browse(key)).grid(row=row + 1, column=1, padx=(6, 0), pady=(4, 10))
+
+    def _scroll(self, event):
+        x, y = self.winfo_pointerxy()
+        widget = self.winfo_containing(x, y)
+        if widget is not None and str(widget).startswith(str(self.form_canvas)) and not isinstance(widget, tk.Text):
+            self.form_canvas.yview_scroll(int(-event.delta / 120), "units")
+
+    def add_view(self, prompt="", label="Original"):
+        row = ViewRow(self.view_frame, len(self.rows) + 1, self.remove_view, prompt, label)
+        self.rows.append(row)
+        row.frame.pack(fill="x", pady=(0, 10))
+
+    def remove_view(self, row):
+        if len(self.rows) == 1:
+            return
+        self.rows.remove(row)
+        row.frame.destroy()
+        for index, remaining in enumerate(self.rows, start=1):
+            remaining.title.configure(text=f"VIEW {index}")
+
+    def browse(self, key):
+        path = filedialog.askdirectory(parent=self, title="Choose folder")
+        if path:
+            self.form[key].set(path)
+
+    def generate(self):
+        if self.running:
+            return
+        try:
+            command, destination = build_command(
+                {key: value.get() for key, value in self.form.items()},
+                [row.values() for row in self.rows], python=worker_python(),
+            )
+            self.job.start(command)
+        except (ValueError, OSError, RuntimeError) as exc:
+            messagebox.showerror("Could not start generation", str(exc), parent=self)
+            return
+        self.output_dir = destination
+        self.task = "generation"
+        self.images = []
+        self.sample_picker.configure(values=[])
+        self.selection.set("")
+        self.preview_images = [None, None]
+        self.render_previews()
+        self.play_button.configure(state="disabled")
+        self.current_sample = 1
+        self.log_buffer = ""
+        self.running = True
+        self.generate_button.configure(state="disabled")
+        self.export_button.configure(state="disabled")
+        self.cancel_button.configure(state="normal")
+        self.status.set("Preparing Iris and model downloads…")
+        self.progress.configure(mode="indeterminate")
+        self.progress.start(12)
+        self.log.configure(state="normal")
+        self.log.delete("1.0", "end")
+        self.log.configure(state="disabled")
+        self.append_log(f"Saving to {destination}\n")
+
+    def export_animation(self):
+        if self.running:
+            return
+        index = self.sample_picker.current()
+        if index < 0 or index >= len(self.images):
+            messagebox.showerror("Choose an image", "Generate an image or load a saved result first.", parent=self)
+            return
+        try:
+            command = build_export_command({key: value.get() for key, value in self.form.items()},
+                                            self.images[index], python=worker_python())
+            self.job.start(command)
+        except (ValueError, OSError, RuntimeError) as exc:
+            messagebox.showerror("Could not export animation", str(exc), parent=self)
+            return
+        self.task = "animation"
+        self.output_dir = self.images[index].parent.parent
+        self.running = True
+        self.log_buffer = ""
+        self.generate_button.configure(state="disabled")
+        self.export_button.configure(state="disabled")
+        self.cancel_button.configure(state="normal")
+        self.progress.configure(mode="indeterminate")
+        self.progress.start(12)
+        self.status.set("Preparing animation export…")
+        self.append_log(f"Animating {self.images[index]}\n")
+
+    def animation_files(self):
+        index = self.sample_picker.current()
+        if index < 0 or index >= len(self.images):
+            return []
+        image = self.images[index]
+        return sorted([*image.parent.glob(image.stem + "*.mp4"), *image.parent.glob(image.stem + "*.gif")])
+
+    def play_animation(self):
+        files = self.animation_files()
+        if not files:
+            return
+        path = max(files, key=lambda item: item.stat().st_mtime)
+        try:
+            if os.name == "nt":
+                os.startfile(path)
+            else:
+                subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(path)])
+        except OSError as exc:
+            messagebox.showerror("Could not open animation", str(exc), parent=self)
+
+    def append_log(self, text):
+        self.log.configure(state="normal")
+        self.log.insert("end", text + "\n")
+        # Bound log memory during long downloads and large batches.
+        if int(self.log.index("end-1c").split(".")[0]) > 800:
+            self.log.delete("1.0", "200.0")
+        self.log.see("end")
+        self.log.configure(state="disabled")
+
+    def handle_line(self, line):
+        line = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", line).strip()
+        if not line:
+            return
+        self.append_log(line)
+        match = re.search(r"(Iris multi-view denoising|Animation export):.*?(\d+)/(\d+)", line)
+        if match:
+            stage = match[1]
+            current, total = int(match[2]), int(match[3])
+            self.progress.stop()
+            self.progress.configure(mode="determinate", maximum=total, value=current)
+            self.status.set(f"Animation · Frame {current}/{total}" if stage == "Animation export" else f"Sample {self.current_sample} · Denoising {current}/{total}")
+        elif line.startswith("Generating sample "):
+            match = re.search(r"sample (\d+)", line)
+            self.current_sample = int(match[1]) if match else 1
+            self.status.set(line)
+            self.progress.configure(value=0)
+        elif line.startswith("Preparing") or line.startswith("Loading Iris"):
+            self.status.set(line)
+        elif line.startswith("Exporting animation"):
+            self.status.set(line)
+        elif line.startswith(("Saved animation ", "Saved labels ")):
+            self.show_sample()
+        elif line.startswith("Saved "):
+            self.refresh_results()
+
+    def poll(self):
+        try:
+            while True:
+                kind, value = self.job.events.get_nowait()
+                if kind == "log":
+                    self.log_buffer += value
+                    lines = re.split(r"[\r\n]", self.log_buffer)
+                    self.log_buffer = lines.pop()
+                    for line in lines:
+                        self.handle_line(line)
+                elif kind == "exit":
+                    if self.log_buffer:
+                        self.handle_line(self.log_buffer)
+                        self.log_buffer = ""
+                    self.running = False
+                    self.progress.stop()
+                    self.generate_button.configure(state="normal")
+                    self.export_button.configure(state="normal")
+                    self.cancel_button.configure(state="disabled")
+                    if self.task == "generation":
+                        self.refresh_results()
+                    else:
+                        self.show_sample()
+                    if self.job.cancelled:
+                        self.status.set("Cancelled. Completed outputs have been kept.")
+                    elif value == 0:
+                        self.progress.configure(mode="determinate", maximum=1, value=1)
+                        self.status.set("Animation export finished. Use Play animation to view it." if self.task == "animation" else f"Finished · {len(self.images)} image(s) saved")
+                    else:
+                        self.status.set("Export failed. See the log below for details." if self.task == "animation" else "Generation failed. See the log below for details.")
+        except queue.Empty:
+            pass
+        self.after(100, self.poll)
+
+    def cancel(self):
+        self.job.cancel()
+        self.cancel_button.configure(state="disabled")
+        self.status.set("Stopping generation…")
+
+    def refresh_results(self):
+        if self.output_dir is None or not self.output_dir.is_dir():
+            return
+        self.images = sorted(self.output_dir.glob("*/sample_1024.png"))
+        labels = [f"Seed {image.parent.name}" for image in self.images]
+        self.sample_picker.configure(values=labels)
+        if labels:
+            self.sample_picker.current(len(labels) - 1)
+            self.show_sample()
+
+    def show_sample(self):
+        index = self.sample_picker.current()
+        if index < 0 or index >= len(self.images):
+            return
+        path = self.images[index]
+        paths = [path, path.with_name(path.stem + ".views.png")]
+        for index, candidate in enumerate(paths):
+            labeled = candidate.with_name(candidate.stem + ".labeled.png")
+            if self.form["labels"].get() == "yes" and labeled.is_file():
+                candidate = labeled
+            try:
+                with Image.open(candidate) as image:
+                    self.preview_images[index] = image.convert("RGB")
+            except (OSError, ValueError):
+                self.preview_images[index] = None
+        self.render_previews()
+        self.play_button.configure(state="normal" if self.animation_files() else "disabled")
+
+    def render_previews(self):
+        for index, canvas in enumerate(self.preview_canvases):
+            canvas.delete("all")
+            width, height = canvas.winfo_width(), canvas.winfo_height()
+            if width < 4 or height < 4:
+                continue
+            image = self.preview_images[index]
+            if image is None:
+                canvas.create_text(width / 2, height / 2 - 20 * self.ui_scale, text="A new perspective awaits", fill="#7d889b", font=("Segoe UI", 17), width=max(1, width - 30))
+                canvas.create_text(width / 2, height / 2 + 18 * self.ui_scale, text="Generate an illusion or load a saved result.", fill="#7d889b", font=("Segoe UI", 10), width=max(1, width - 30))
+            else:
+                preview = image.copy()
+                preview.thumbnail((max(1, width - 24), max(1, height - 24)), Image.Resampling.LANCZOS)
+                self.preview_photos[index] = ImageTk.PhotoImage(preview, master=self)
+                canvas.create_image(width / 2, height / 2, image=self.preview_photos[index])
+
+    def load_result(self):
+        path = filedialog.askopenfilename(parent=self, title="Open a generated image", filetypes=[("PNG images", "*.png")])
+        if path:
+            candidate = Path(path)
+            if candidate.name.endswith(".labeled.png"):
+                candidate = candidate.with_name(candidate.name.replace(".labeled.png", ".png"))
+            if candidate.name.endswith(".views.png"):
+                candidate = candidate.with_name(candidate.name.replace(".views.png", ".png"))
+            self.images = [candidate]
+            self.sample_picker.configure(values=[f"Loaded: {candidate.parent.name}"])
+            self.sample_picker.current(0)
+            self.show_sample()
+
+    def open_results(self):
+        folder = self.output_dir if self.output_dir and self.output_dir.is_dir() else Path(self.form["output"].get()).expanduser()
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            if os.name == "nt":
+                os.startfile(folder)
+            else:
+                subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(folder)])
+        except OSError as exc:
+            messagebox.showerror("Could not open folder", str(exc), parent=self)
+
+    def close(self):
+        if self.running:
+            if not messagebox.askyesno("Stop current task?", "Stop the current task and close the window? Completed outputs will be kept.", parent=self):
+                return
+            self.job.cancel()
+        self.destroy()
+
+
+def main():
+    AnagramApp().mainloop()
