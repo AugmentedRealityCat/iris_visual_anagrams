@@ -27,6 +27,30 @@ TEXT_ID = "Qwen/Qwen3-VL-4B-Instruct"
 TEXT_REVISION = "ebb281ec70b05090aa6165b016eac8ec08e71b17"
 
 
+class _FrozenInt8Matmul(torch.autograd.Function):
+    """Recreate frozen weights for input gradients instead of retaining BF16 copies."""
+
+    @staticmethod
+    def forward(ctx, inputs, qweight, scale, bias, dtype):
+        # Frozen buffers already reside on the device. Keeping references here
+        # avoids save_on_cpu redundantly copying the entire checkpoint.
+        ctx.qweight, ctx.scale = qweight, scale
+        ctx.versions = (qweight._version, scale._version)
+        ctx.dtype, ctx.input_dtype = dtype, inputs.dtype
+        weight = (qweight.float() * scale).to(dtype)
+        return F.linear(inputs.to(dtype), weight, bias.to(dtype) if bias is not None else None)
+
+    @staticmethod
+    def backward(ctx, gradient):
+        if ctx.versions != (ctx.qweight._version, ctx.scale._version):
+            raise RuntimeError("Frozen INT8 buffers changed during differentiation")
+        with torch.autocast(gradient.device.type, enabled=False):
+            weight = (ctx.qweight.float() * ctx.scale).to(ctx.dtype)
+            result = (gradient.to(ctx.dtype).reshape(-1, gradient.shape[-1]) @ weight)
+            result = result.reshape(*gradient.shape[:-1], weight.shape[1]).to(ctx.input_dtype)
+        return result, None, None, None, None
+
+
 class Int8Linear(nn.Module):
     """Rowwise symmetric INT8 storage, FP32 scales, autocast computation."""
 
@@ -43,6 +67,8 @@ class Int8Linear(nn.Module):
             if torch.is_autocast_enabled(inputs.device.type)
             else inputs.dtype
         )
+        if torch.is_grad_enabled() and inputs.requires_grad:
+            return _FrozenInt8Matmul.apply(inputs, self.qweight, self.scale, self.bias, dtype)
         weight = (self.qweight.float() * self.scale).to(dtype)
         bias = self.bias.to(dtype) if self.bias is not None else None
         return F.linear(inputs.to(dtype), weight, bias)
@@ -136,6 +162,14 @@ class PromptEncoding:
     mask: torch.Tensor
 
 
+def image_dimensions(size, patch):
+    """Accept a square side or (height, width), as used by the standalone tools."""
+    height, width = (size, size) if isinstance(size, int) else size
+    if any(not isinstance(side, int) or side <= 0 or side % patch for side in (height, width)):
+        raise ValueError("Image size must be a positive multiple of the model patch size")
+    return height, width
+
+
 @torch.inference_mode()
 def encode_prompts(cfg, prompts, negative_prompt="", device="cuda", text_encoder_path=None, *, encode_negative=True):
     """Encode one prompt at a time; release Qwen before loading Iris on GPU."""
@@ -194,14 +228,13 @@ def sample_iris(
         raise ValueError("Use at least one step and solver order 1 or 2")
     if not math.isfinite(shift) or shift <= 0 or not math.isfinite(guidance_scale):
         raise ValueError("Shift must be positive and guidance must be finite")
-    if size <= 0 or size % model.cfg.patch_size:
-        raise ValueError("Image size must be a positive multiple of the model patch size")
+    height, width = image_dimensions(size, model.cfg.patch_size)
 
     device = torch.device(device)
     positive = PromptEncoding(positive.embeddings.to(device), positive.mask.to(device))
     negative = PromptEncoding(negative.embeddings.to(device), negative.mask.to(device))
     dtype = next(model.parameters()).dtype
-    noise = torch.randn((1, model.cfg.in_channels, size, size), generator=generator, device=device, dtype=torch.float32)
+    noise = torch.randn((1, model.cfg.in_channels, height, width), generator=generator, device=device, dtype=torch.float32)
     step = 0
     bar = tqdm(total=num_inference_steps, desc="Iris multi-view denoising", disable=not progress)
 

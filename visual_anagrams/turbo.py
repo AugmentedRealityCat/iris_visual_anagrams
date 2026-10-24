@@ -136,14 +136,15 @@ def sample_turbo(
     reduction = resolve_reduction(reduction, views)
     if num_inference_steps < 1 or not math.isfinite(shift) or shift <= 0:
         raise ValueError("Turbo needs positive steps and a positive finite shift")
-    if size <= 0 or size % model.cfg.patch_size:
-        raise ValueError("Image size must be a positive multiple of the model patch size")
+    from .iris import image_dimensions
+
+    height, width = image_dimensions(size, model.cfg.patch_size)
     device = torch.device(device)
     dtype = next(model.parameters()).dtype
     embeddings = positive.embeddings.to(device=device, dtype=dtype)
     mask = positive.mask.to(device)
     times = shift_sigma(1.0 - torch.arange(num_inference_steps, dtype=torch.float64) / num_inference_steps, shift).tolist()
-    image = torch.randn((1, model.cfg.in_channels, size, size), generator=generator, device=device)
+    image = torch.randn((1, model.cfg.in_channels, height, width), generator=generator, device=device)
     context = torch.autocast("cuda", dtype=torch.bfloat16) if device.type == "cuda" else nullcontext()
     with context:
         for step, time in enumerate(tqdm(times, desc="Iris multi-view denoising", disable=not progress)):

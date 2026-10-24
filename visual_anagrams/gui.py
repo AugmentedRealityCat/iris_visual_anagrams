@@ -19,6 +19,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
 from PIL import Image, ImageTk
+from visual_anagrams.method_options import QUALITY_METHODS, MethodOptions
+from visual_anagrams.theme import DARK, LIGHT, load_preferences, preferences_path, save_theme, style_log_scrollbar
 
 ROOT = Path(__file__).resolve().parents[1]
 VIEWS = {
@@ -153,6 +155,29 @@ def build_command(settings, rows, *, python=None, root=ROOT):
     from visual_anagrams.composition import resolve_reduction
 
     reduction = resolve_reduction(settings["reduction"], view_names, view_args)
+    method_label = settings.get("quality_method", "Classic (default)")
+    if method_label not in QUALITY_METHODS:
+        raise ValueError("Choose a valid quality method")
+    method = QUALITY_METHODS[method_label]
+    method_args = []
+    if method != "plain":
+        try:
+            strength = settings.get("method_strength", "").strip()
+            options = MethodOptions(method, int(settings.get("optimization_interval", "5")),
+                                    int(settings.get("optimization_steps", "1")), float(strength) if strength else None)
+        except ValueError:
+            raise ValueError("Optimization interval/passes must be integers and strength must be a number") from None
+        options.validate(view_names, turbo=bool(adapter), reduction=reduction, steps=integers["steps"])
+        method_args = ["--quality_method", method, "--optimization_interval", str(options.interval),
+                       "--optimization_steps", str(options.iterations), "--method_strength", str(options.strength)]
+        if method == "anagram_mtl" and settings.get("subjects", "").strip():
+            subjects = [subject.strip() for subject in settings["subjects"].split("|")]
+            if len(subjects) != len(rows) or any(not s for s in subjects):
+                raise ValueError("Enter one subject phrase per view, separated by |")
+            for row, subject in zip(rows, subjects):
+                if subject.casefold() not in f"{settings['style']} {row['prompt']}".casefold():
+                    raise ValueError("Each subject phrase must occur in its corresponding prompt")
+            method_args += ["--subjects", *subjects]
     command = [python or sys.executable, "-u", str(Path(root) / "generate.py"),
                "--name", destination.name, "--save_dir", str(output),
                "--prompts", *[row["prompt"].strip() for row in rows],
@@ -163,6 +188,7 @@ def build_command(settings, rows, *, python=None, root=ROOT):
                "--shift", str(numbers["shift"]), "--solver_order", str(settings["order"]),
                "--reduction", reduction, "--device", settings["device"],
                "--text_encoder_device", settings["text_device"]]
+    command.extend(method_args)
     if adapter:
         command.extend(["--turbo", "--turbo_adapter", adapter])
     else:
@@ -232,15 +258,18 @@ class GenerationJob:
 
 
 class ViewRow:
-    def __init__(self, parent, index, remove, prompt="", label="Original"):
+    def __init__(self, parent, index, remove, prompt="", label="Original", colors=None):
+        colors = colors or LIGHT
         self.frame = ttk.Frame(parent, style="Card.TFrame", padding=12)
         self.frame.columnconfigure(0, weight=1)
         self.title = ttk.Label(self.frame, text=f"VIEW {index}", style="Eyebrow.TLabel")
         self.title.grid(row=0, column=0, sticky="w", pady=(0, 8))
         ttk.Button(self.frame, text="Remove", command=lambda: remove(self), style="Small.TButton").grid(row=0, column=1)
         self.prompt = tk.Text(self.frame, height=2, wrap="word", font=("Segoe UI", 11),
-                              bg="#f7f8fc", fg=INK, relief="flat", padx=10, pady=8, undo=True,
-                              highlightthickness=1, highlightbackground="#dce1eb", highlightcolor=ACCENT)
+                              bg=colors["field"], fg=colors["ink"], insertbackground=colors["ink"],
+                              selectbackground=colors["selection"], selectforeground="white",
+                              relief="flat", padx=10, pady=8, undo=True,
+                              highlightthickness=1, highlightbackground=colors["border"], highlightcolor=colors["accent"])
         self.prompt.insert("1.0", prompt)
         self.prompt.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 9))
         options = ttk.Frame(self.frame, style="Card.TFrame")
@@ -272,7 +301,7 @@ class ViewRow:
 
 
 class AnagramApp(tk.Tk):
-    def __init__(self):
+    def __init__(self, *, settings_path=None):
         if sys.platform == "win32":
             import ctypes
             try:
@@ -280,13 +309,16 @@ class AnagramApp(tk.Tk):
             except (AttributeError, OSError):
                 pass
         super().__init__()
+        self.settings_path = Path(settings_path) if settings_path is not None else preferences_path()
+        self.dark_mode = tk.BooleanVar(value=load_preferences(self.settings_path).get("theme") == "dark")
+        self.colors = DARK if self.dark_mode.get() else LIGHT
         self.title("Visual Anagrams · Iris Studio")
         self.ui_scale = max(1.0, self.winfo_fpixels("1i") / 96)
         width = min(round(1280 * self.ui_scale), self.winfo_screenwidth() - 80)
         height = min(round(900 * self.ui_scale), self.winfo_screenheight() - 120)
         self.geometry(f"{width}x{height}")
         self.minsize(min(round(1000 * self.ui_scale), width), min(round(720 * self.ui_scale), height))
-        self.configure(bg=BG)
+        self.configure(bg=self.colors["bg"])
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.job = GenerationJob()
         self.running = False
@@ -302,52 +334,147 @@ class AnagramApp(tk.Tk):
             "reduction": "auto", "shift": "4.0", "order": "2", "device": "cuda",
             "text_device": "cuda", "model_path": "", "text_path": "",
             "mode": "Standard Iris",
+            "quality_method": "Classic (default)", "optimization_interval": "5", "optimization_steps": "1",
+            "method_strength": "0.05", "subjects": "",
             "animation_auto": "no", "animation_format": "MP4 video", "animation_fps": "24",
             "animation_size": "768", "animation_transition": "1.5", "animation_hold": "1.0",
             "animation_loop": "yes", "labels": "no", "animation_borderless": "no",
         }.items()}
         self.standard_settings = None
         self._styles()
+        appearance = ttk.Frame(self, padding=(20, 6, 20, 2))
+        appearance.pack(fill="x")
+        ttk.Checkbutton(appearance, text="Dark mode", variable=self.dark_mode,
+                        style="Toolbar.TCheckbutton", command=self.apply_theme).pack(side="right")
+        self.pages = ttk.Notebook(self)
+        self.pages.pack(fill="both", expand=True)
+        self.anagram_page = ttk.Frame(self.pages)
+        self.pages.add(self.anagram_page, text="Visual Anagrams")
         self._layout()
+        from .tools_gui import IrisToolsPage
+
+        self.tools_page = IrisToolsPage(self.pages, self)
+        self.pages.add(self.tools_page, text="Iris Tools")
+        for log in (self.log, self.tools_page.log):
+            style_log_scrollbar(log)
         self.mode_changed()
         self.add_view("a snowy mountain village", "Original")
         self.add_view("a horse", "Rotate 90° right")
+        self.apply_theme(save=False)
         self.after(100, self.poll)
 
     def _styles(self):
+        p = self.colors
         style = ttk.Style(self)
-        style.theme_use("clam")
-        style.configure(".", font=("Segoe UI", 10), foreground=INK, background=BG)
-        style.configure("TFrame", background=BG)
-        style.configure("Card.TFrame", background=PANEL)
-        style.configure("TLabel", background=PANEL, padding=0)
-        style.configure("Title.TLabel", background=BG, font=("Segoe UI", 23, "bold"))
-        style.configure("Subtitle.TLabel", background=BG, foreground=MUTED)
-        style.configure("Eyebrow.TLabel", foreground=ACCENT, font=("Segoe UI", 9, "bold"))
-        style.configure("Hint.TLabel", foreground=MUTED, font=("Segoe UI", 9))
-        style.configure("TButton", padding=(12, 7), background="#e6e9f0", borderwidth=0)
-        style.map("TButton", background=[("active", "#d8ddeb")])
-        style.configure("Accent.TButton", background=ACCENT, foreground="white", font=("Segoe UI", 11, "bold"))
-        style.map("Accent.TButton", background=[("disabled", "#b9b6df"), ("active", "#4035c5")])
+        if style.theme_use() != "clam":
+            style.theme_use("clam")
+        style.configure(".", font=("Segoe UI", 10), foreground=p["ink"], background=p["bg"],
+                        bordercolor=p["border"], lightcolor=p["border"], darkcolor=p["border"],
+                        selectbackground=p["selection"], selectforeground="white", focuscolor=p["accent"])
+        style.configure("TFrame", background=p["bg"])
+        style.configure("Card.TFrame", background=p["panel"])
+        style.configure("TLabel", background=p["panel"], padding=0)
+        style.configure("Title.TLabel", background=p["bg"], font=("Segoe UI", 23, "bold"))
+        style.configure("Subtitle.TLabel", background=p["bg"], foreground=p["muted"])
+        style.configure("Eyebrow.TLabel", foreground=p["accent"], font=("Segoe UI", 9, "bold"))
+        style.configure("Hint.TLabel", foreground=p["muted"], font=("Segoe UI", 9))
+        style.configure("TButton", padding=(12, 7), background=p["button"], borderwidth=0)
+        style.map("TButton", background=[("disabled", p["disabled_bg"]), ("pressed", p["pressed"]), ("active", p["hover"])],
+                  foreground=[("disabled", p["disabled"]), ("!disabled", p["ink"])])
+        style.configure("Accent.TButton", background=p["selection"], foreground="white", font=("Segoe UI", 11, "bold"))
+        style.map("Accent.TButton", background=[("disabled", p["accent_disabled"]), ("active", p["accent_hover"])],
+                  foreground=[("disabled", p["muted"]), ("!disabled", "white")])
         style.configure("Small.TButton", padding=(7, 3), font=("Segoe UI", 9))
-        style.configure("TEntry", fieldbackground="#f7f8fc", padding=6)
-        style.configure("TCombobox", fieldbackground="#f7f8fc", padding=5)
-        style.configure("TCheckbutton", background=PANEL, padding=(0, 5),
+        for name, padding in (("TEntry", 6), ("TCombobox", 5)):
+            style.configure(name, fieldbackground=p["field"], foreground=p["ink"], background=p["button"],
+                            insertcolor=p["ink"], arrowcolor=p["ink"], padding=padding)
+            style.map(name, fieldbackground=[("disabled", p["disabled_bg"]), ("readonly", p["field"])],
+                      foreground=[("disabled", p["disabled"]), ("!disabled", p["ink"])],
+                      selectbackground=[("!disabled", p["selection"])], selectforeground=[("!disabled", "white")],
+                      arrowcolor=[("disabled", p["disabled"]), ("!disabled", p["ink"])])
+        style.configure("TCheckbutton", background=p["panel"], padding=(0, 5), indicatorbackground=p["field"],
+                        indicatorforeground=p["ink"],
                         indicatorsize=round(22 * self.ui_scale),
                         indicatormargin=(0, 0, round(9 * self.ui_scale), 0))
-        style.configure("TNotebook", background=BG, borderwidth=0)
-        style.configure("TNotebook.Tab", padding=(14, 8))
-        style.configure("Horizontal.TProgressbar", background=ACCENT, troughcolor="#e5e8f0", borderwidth=0)
+        style.map("TCheckbutton", background=[("active", p["panel"])],
+                  foreground=[("disabled", p["disabled"]), ("!disabled", p["ink"])],
+                  indicatorbackground=[("selected", p["selection"]), ("!selected", p["field"])],
+                  indicatorforeground=[("selected", "white"), ("!selected", p["ink"])])
+        style.configure("Toolbar.TCheckbutton", background=p["bg"])
+        style.map("Toolbar.TCheckbutton", background=[("active", p["bg"])])
+        style.configure("TNotebook", background=p["bg"], borderwidth=0)
+        style.configure("TNotebook.Tab", padding=(14, 8), background=p["button"])
+        style.map("TNotebook.Tab", background=[("selected", p["panel"]), ("active", p["hover"])],
+                  foreground=[("selected", p["ink"]), ("!selected", p["muted"])])
+        style.configure("Vertical.TScrollbar", background=p["button"], troughcolor=p["bg"], arrowcolor=p["ink"])
+        style.map("Vertical.TScrollbar", background=[("active", p["hover"]), ("pressed", p["pressed"])])
+        style.configure("Horizontal.TProgressbar", background=p["selection"], troughcolor=p["trough"], borderwidth=0)
+        for option, value in {"background": p["field"], "foreground": p["ink"],
+                              "selectBackground": p["selection"], "selectForeground": "white"}.items():
+            self.option_add(f"*TCombobox*Listbox.{option}", value)
+
+    def apply_theme(self, *, save=True):
+        self.colors = DARK if self.dark_mode.get() else LIGHT
+        self._styles()
+        p = self.colors
+        self.configure(bg=p["bg"])
+        previews = set(self.preview_canvases + self.tools_page.previews)
+        logs = {self.log, self.tools_page.log}
+
+        def recolor(widget):
+            if isinstance(widget, tk.Canvas):
+                widget.configure(background=p["preview"] if widget in previews else p["bg"])
+            elif isinstance(widget, tk.Text):
+                widget.configure(background=p["log_bg"] if widget in logs else p["field"],
+                                 foreground=p["log_ink"] if widget in logs else p["ink"],
+                                 insertbackground=p["ink"], selectbackground=p["selection"], selectforeground="white",
+                                 highlightbackground=p["border"], highlightcolor=p["accent"])
+            elif isinstance(widget, tk.Frame) and not isinstance(widget, ttk.Frame):
+                widget.configure(background=p["bg"])
+            elif isinstance(widget, tk.Scrollbar) and not isinstance(widget, ttk.Scrollbar):
+                widget.configure(background=p["button"], activebackground=p["hover"], troughcolor=p["bg"])
+            elif isinstance(widget, ttk.Combobox):
+                # Update a dropdown that was already opened before switching.
+                popup = str(widget) + ".popdown.f.l"
+                if widget.tk.call("winfo", "exists", popup):
+                    widget.tk.call(popup, "configure", "-background", p["field"], "-foreground", p["ink"],
+                                   "-selectbackground", p["selection"], "-selectforeground", "white")
+            for child in widget.winfo_children():
+                recolor(child)
+
+        recolor(self)
+        self.render_previews()
+        self.tools_page.render()
+        self.after_idle(self._titlebar_theme)
+        if save:
+            save_theme(self.settings_path, self.dark_mode.get())
+
+    def _titlebar_theme(self):
+        if os.name == "nt":
+            try:
+                import ctypes
+                from ctypes import wintypes
+
+                get_parent = ctypes.windll.user32.GetParent
+                get_parent.argtypes, get_parent.restype = [wintypes.HWND], wintypes.HWND
+                handle = get_parent(self.winfo_id())
+                setter = ctypes.windll.dwmapi.DwmSetWindowAttribute
+                setter.argtypes = [wintypes.HWND, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD]
+                dark = ctypes.c_int(self.dark_mode.get())
+                if setter(handle, 20, ctypes.byref(dark), ctypes.sizeof(dark)):
+                    setter(handle, 19, ctypes.byref(dark), ctypes.sizeof(dark))
+            except (AttributeError, OSError, tk.TclError):
+                pass
 
     def _layout(self):
-        header = ttk.Frame(self, padding=(24, 18))
+        header = ttk.Frame(self.anagram_page, padding=(24, 18))
         header.pack(fill="x")
         ttk.Label(header, text="Visual Anagrams", style="Title.TLabel").pack(side="left")
         ttk.Label(header, text="IRIS 3B INT8  /  1024 × 1024", style="Subtitle.TLabel").pack(side="right")
-        ttk.Label(self, text="One image. Different perspectives. Describe what each view should reveal.",
+        ttk.Label(self.anagram_page, text="One image. Different perspectives. Describe what each view should reveal.",
                   style="Subtitle.TLabel").pack(anchor="w", padx=25, pady=(0, 16))
 
-        body = ttk.Frame(self, padding=(20, 0, 20, 16))
+        body = ttk.Frame(self.anagram_page, padding=(20, 0, 20, 16))
         body.pack(fill="both", expand=True)
         panel_width = round(440 * self.ui_scale)
         body.columnconfigure(0, weight=0, minsize=panel_width)
@@ -396,6 +523,27 @@ class AnagramApp(tk.Tk):
         self.negative_entry.grid(row=9, column=0, columnspan=2, sticky="ew", pady=(4, 10))
         ttk.Label(settings, text="Combine views").grid(row=10, column=0, sticky="w")
         ttk.Combobox(settings, textvariable=self.form["reduction"], values=["auto", "mean", "alternate", "sum"], state="readonly", width=16).grid(row=10, column=1, sticky="ew")
+
+        quality = self._card(self.controls, "QUALITY METHOD")
+        quality.columnconfigure(0, weight=1)
+        self.quality_combo = ttk.Combobox(quality, textvariable=self.form["quality_method"],
+                                          values=list(QUALITY_METHODS), state="readonly")
+        self.quality_combo.grid(row=1, column=0, sticky="ew")
+        self.quality_combo.bind("<<ComboboxSelected>>", self.quality_changed)
+        self.quality_hint = ttk.Label(quality, style="Hint.TLabel", wraplength=round(370 * self.ui_scale))
+        self.quality_hint.grid(row=2, column=0, sticky="w", pady=6)
+        self.method_entries = []
+        self.method_labels = []
+        for row, (label, key) in enumerate((("Optimize every N steps", "optimization_interval"),
+                                          ("Optimization passes", "optimization_steps"),
+                                          ("Optimization strength", "method_strength"),
+                                          ("Subject words (MTL, optional; separate with |)", "subjects"))):
+            field_label = ttk.Label(quality, text=label)
+            field_label.grid(row=3 + row * 2, column=0, sticky="w", pady=(5, 0))
+            entry = ttk.Entry(quality, textvariable=self.form[key])
+            entry.grid(row=4 + row * 2, column=0, sticky="ew", pady=(3, 5))
+            self.method_entries.append(entry)
+            self.method_labels.append(field_label)
 
         output = self._card(self.controls, "SAVE RESULTS")
         output.columnconfigure(0, weight=1)
@@ -494,8 +642,8 @@ class AnagramApp(tk.Tk):
     def mode_changed(self, _event=None):
         turbo = GENERATION_MODES[self.form["mode"].get()] is not None
         if turbo and self.standard_settings is None:
-            self.standard_settings = {key: self.form[key].get() for key in ("steps", "guidance", "negative", "shift")}
-            for key, value in {"steps": "4", "guidance": "1.0", "negative": "", "shift": "4.0"}.items():
+            self.standard_settings = {key: self.form[key].get() for key in ("steps", "guidance", "negative", "shift", "quality_method")}
+            for key, value in {"steps": "4", "guidance": "1.0", "negative": "", "shift": "4.0", "quality_method": "Classic (default)"}.items():
                 self.form[key].set(value)
         elif not turbo and self.standard_settings is not None:
             for key, value in self.standard_settings.items():
@@ -506,6 +654,33 @@ class AnagramApp(tk.Tk):
         self.order_combo.configure(state="disabled" if turbo else "readonly")
         self.mode_hint.configure(text=("Fast previews: 4 steps with built-in guidance. Try 8 steps as an experiment."
                                        if turbo else "Recommended starting point: 30 steps, guidance 3, Auto combining."))
+        self.quality_combo.configure(state="disabled" if turbo else "readonly")
+        self.quality_changed()
+
+    def quality_changed(self, _event=None):
+        method = QUALITY_METHODS[self.form["quality_method"].get()]
+        previous = getattr(self, "previous_quality_method", "plain")
+        previous_default = MethodOptions(previous).strength
+        try:
+            if float(self.form["method_strength"].get()) == previous_default:
+                self.form["method_strength"].set(str(MethodOptions(method).strength))
+        except ValueError:
+            pass
+        self.previous_quality_method = method
+        turbo = GENERATION_MODES[self.form["mode"].get()] is not None
+        hints = {"plain": "Classic view averaging. Experimental methods require Standard Iris and two geometric views.",
+                 "anagram_mtl": "Balances views and encourages subject attention to overlap. Uses CPU CLIP and gradient optimization.",
+                 "syncvc": "Optimizes agreement between two image trajectories. Uses a flow Euler solver and gradient optimization."}
+        self.quality_hint.configure(text=hints[method])
+        for index, (label, entry) in enumerate(zip(self.method_labels, self.method_entries)):
+            if method == "plain" or turbo:
+                label.grid_remove()
+                entry.grid_remove()
+            else:
+                label.grid()
+                entry.grid()
+            entry.configure(state="disabled" if method == "plain" or turbo or (index == 3 and method != "anagram_mtl") else "normal")
+        self.order_combo.configure(state="disabled" if turbo or method == "syncvc" else "readonly")
 
     def _entry(self, parent, label, key, row):
         ttk.Label(parent, text=label).grid(row=row, column=0, columnspan=2, sticky="w")
@@ -519,11 +694,17 @@ class AnagramApp(tk.Tk):
     def _scroll(self, event):
         x, y = self.winfo_pointerxy()
         widget = self.winfo_containing(x, y)
-        if widget is not None and str(widget).startswith(str(self.form_canvas)) and not isinstance(widget, tk.Text):
-            self.form_canvas.yview_scroll(int(-event.delta / 120), "units")
+        canvases = [self.form_canvas]
+        if hasattr(self, "tools_page"):
+            canvases.append(self.tools_page.canvas)
+        if widget is not None and not isinstance(widget, tk.Text):
+            for canvas in canvases:
+                if str(widget).startswith(str(canvas)):
+                    canvas.yview_scroll(int(-event.delta / 120), "units")
+                    break
 
     def add_view(self, prompt="", label="Original"):
-        row = ViewRow(self.view_frame, len(self.rows) + 1, self.remove_view, prompt, label)
+        row = ViewRow(self.view_frame, len(self.rows) + 1, self.remove_view, prompt, label, self.colors)
         self.rows.append(row)
         row.frame.pack(fill="x", pady=(0, 10))
 
@@ -541,7 +722,7 @@ class AnagramApp(tk.Tk):
             self.form[key].set(path)
 
     def generate(self):
-        if self.running:
+        if self.running or self.tools_page.running:
             return
         try:
             command, destination = build_command(
@@ -575,7 +756,7 @@ class AnagramApp(tk.Tk):
         self.append_log(f"Saving to {destination}\n")
 
     def export_animation(self):
-        if self.running:
+        if self.running or self.tools_page.running:
             return
         index = self.sample_picker.current()
         if index < 0 or index >= len(self.images):
@@ -634,7 +815,7 @@ class AnagramApp(tk.Tk):
         if not line:
             return
         self.append_log(line)
-        match = re.search(r"(Iris multi-view denoising|Animation export):.*?(\d+)/(\d+)", line)
+        match = re.search(r"(Iris multi-view denoising|Iris anagram_mtl|Iris syncvc|Animation export):.*?(\d+)/(\d+)", line)
         if match:
             stage = match[1]
             current, total = int(match[2]), int(match[3])
@@ -730,8 +911,8 @@ class AnagramApp(tk.Tk):
                 continue
             image = self.preview_images[index]
             if image is None:
-                canvas.create_text(width / 2, height / 2 - 20 * self.ui_scale, text="A new perspective awaits", fill="#7d889b", font=("Segoe UI", 17), width=max(1, width - 30))
-                canvas.create_text(width / 2, height / 2 + 18 * self.ui_scale, text="Generate an illusion or load a saved result.", fill="#7d889b", font=("Segoe UI", 10), width=max(1, width - 30))
+                canvas.create_text(width / 2, height / 2 - 20 * self.ui_scale, text="A new perspective awaits", fill=self.colors["placeholder"], font=("Segoe UI", 17), width=max(1, width - 30))
+                canvas.create_text(width / 2, height / 2 + 18 * self.ui_scale, text="Generate an illusion or load a saved result.", fill=self.colors["placeholder"], font=("Segoe UI", 10), width=max(1, width - 30))
             else:
                 preview = image.copy()
                 preview.thumbnail((max(1, width - 24), max(1, height - 24)), Image.Resampling.LANCZOS)
@@ -763,10 +944,11 @@ class AnagramApp(tk.Tk):
             messagebox.showerror("Could not open folder", str(exc), parent=self)
 
     def close(self):
-        if self.running:
+        if self.running or self.tools_page.running:
             if not messagebox.askyesno("Stop current task?", "Stop the current task and close the window? Completed outputs will be kept.", parent=self):
                 return
             self.job.cancel()
+            self.tools_page.job.cancel()
         self.destroy()
 
 
