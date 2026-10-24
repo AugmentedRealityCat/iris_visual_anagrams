@@ -1,5 +1,5 @@
 # Visual Anagrams with Iris 3B INT8
-<img width="3829" height="2064" alt="GUI_VA" src="https://github.com/user-attachments/assets/dbf59f67-5bd2-447f-aa4f-22a1d825c378" />
+<img width="3823" height="2051" alt="GUI_VA" src="https://github.com/user-attachments/assets/5119a86e-2f58-4c81-b080-e457326e6717" />
 
 
 `generate.py` now uses [Aikimi/iris-3b-int8](https://huggingface.co/Aikimi/iris-3b-int8), replacing DeepFloyd IF's two-stage generation with one **1024 x 1024 pixel-space** generation pass. Every denoising step predicts each prompted view, applies its inverse transformation, and combines the aligned predictions. There is no VAE or separate upscaler in this path.
