@@ -137,7 +137,7 @@ def test_gui_method_controls_and_turbo_restore():
     app.withdraw()
     labels = {method: label for label, method in QUALITY_METHODS.items()}
     try:
-        assert app.form["quality_method"].get() == labels["plain"]
+        assert app.form["quality_method"].get() == labels["adaptive"]
         assert all(not entry.grid_info() for entry in app.method_entries)
         app.form["quality_method"].set(labels["syncvc"])
         app.quality_changed()
@@ -150,8 +150,10 @@ def test_gui_method_controls_and_turbo_restore():
         assert app.order_combo.instate(["readonly", "!disabled"])
         app.form["mode"].set(next(label for label, adapter in GENERATION_MODES.items() if adapter == "r2-1000"))
         app.mode_changed()
-        assert app.form["quality_method"].get() == labels["plain"]
-        assert app.quality_combo.instate(["disabled"])
+        assert app.form["quality_method"].get() == labels["adaptive"]
+        assert app.quality_combo.instate(["readonly", "!disabled"])
+        assert labels["anagram_mtl"] not in app.quality_combo["values"]
+        assert labels["adaptive"] in app.quality_combo["values"]
         app.form["mode"].set("Standard Iris")
         app.mode_changed()
         assert app.form["quality_method"].get() == labels["anagram_mtl"]

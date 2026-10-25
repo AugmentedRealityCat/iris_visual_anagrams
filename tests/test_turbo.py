@@ -196,6 +196,7 @@ def test_cli_selects_correct_sampler_and_records_adapter(tmp_path, monkeypatch, 
     def sample(*args, **kwargs):
         calls["steps"] = kwargs["num_inference_steps"]
         calls["guidance"] = kwargs.get("guidance_scale")
+        calls["shift"] = kwargs["shift"]
         calls["sampler"] = "standard"
         return torch.zeros(1, 3, 4, 4)
 
@@ -217,6 +218,7 @@ def test_cli_selects_correct_sampler_and_records_adapter(tmp_path, monkeypatch, 
     assert calls["sampler"] == ("turbo" if turbo else "standard")
     assert calls["steps"] == (4 if turbo else 30)
     assert calls["guidance"] == (None if turbo else 3.0)
+    assert calls["shift"] == 8.0 and metadata["shift"] == 8.0
     assert calls["adapter_path"] == (path if turbo else None)
     if turbo:
         assert metadata["turbo_lora"]["revision"] == TURBO_REVISION
