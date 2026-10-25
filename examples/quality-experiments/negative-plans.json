@@ -1,0 +1,26 @@
+{
+  "venom-spawn": {
+    "mode": "qwen",
+    "subjects": [
+      "Venom",
+      "Spawn"
+    ],
+    "view_negative_prompts": [
+      "Spawn",
+      "Venom"
+    ],
+    "llm_response": "{\"subjects\":[\"Venom\",\"Spawn\"]}"
+  },
+  "hulk-loki-jigsaw": {
+    "mode": "qwen",
+    "subjects": [
+      "the Hulk",
+      "Loki"
+    ],
+    "view_negative_prompts": [
+      "Loki",
+      "the Hulk"
+    ],
+    "llm_response": "{\"subjects\":[\"the Hulk\",\"Loki\"]}"
+  }
+}

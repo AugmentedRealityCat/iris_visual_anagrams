@@ -1,0 +1,6747 @@
+{
+  "plan": {
+    "cases": [
+      {
+        "id": "venom-spawn",
+        "method": "Skew / warp",
+        "theme": "Venom / Spawn",
+        "style_label": "Dark comic art",
+        "style": "a dramatic dark comic book portrait of",
+        "prompts": [
+          "Venom, a black symbiote with large white eyes, sharp teeth and a long tongue",
+          "Spawn, a black masked antihero with glowing green eyes and a flowing red cape"
+        ],
+        "labels": [
+          "Venom",
+          "Spawn"
+        ],
+        "views": [
+          "identity",
+          "skew"
+        ],
+        "view_args": [
+          "0",
+          "0.75"
+        ],
+        "mode": "standard",
+        "steps": 30,
+        "guidance": 3,
+        "negative_prompt": "",
+        "seeds": [
+          121
+        ],
+        "view_seed": 121,
+        "quality_method": "adaptive",
+        "reduction": "mean",
+        "presentation": "geometric",
+        "display_labels": [
+          "Venom",
+          "Spawn"
+        ]
+      },
+      {
+        "id": "hulk-loki-jigsaw",
+        "method": "Jigsaw puzzle",
+        "theme": "Hulk / Loki",
+        "style_label": "Comic mosaic",
+        "style": "a colorful mosaic portrait of",
+        "prompts": [
+          "the Hulk, an angry green face with black hair",
+          "Loki wearing a golden horned helmet"
+        ],
+        "labels": [
+          "Hulk",
+          "Loki"
+        ],
+        "views": [
+          "identity",
+          "jigsaw"
+        ],
+        "view_args": null,
+        "mode": "standard",
+        "steps": 30,
+        "guidance": 3,
+        "negative_prompt": "",
+        "seeds": [
+          161
+        ],
+        "view_seed": 161,
+        "quality_method": "adaptive",
+        "reduction": "mean",
+        "presentation": "geometric",
+        "display_labels": [
+          "Hulk",
+          "Loki"
+        ]
+      },
+      {
+        "id": "vader-castle-hybrid",
+        "method": "Frequency hybrid",
+        "theme": "Darth Vader / Haunted castle",
+        "style_label": "Gothic engraving",
+        "style": "a high contrast monochrome gothic engraving of",
+        "prompts": [
+          "Darth Vader's helmet, a large centered symmetrical face",
+          "a haunted castle with many pointed towers and intricate windows"
+        ],
+        "labels": [
+          "Darth Vader",
+          "Haunted castle"
+        ],
+        "views": [
+          "low_pass",
+          "high_pass"
+        ],
+        "view_args": [
+          "2",
+          "2"
+        ],
+        "mode": "standard",
+        "steps": 30,
+        "guidance": 3,
+        "negative_prompt": "",
+        "seeds": [
+          131
+        ],
+        "view_seed": 131,
+        "quality_method": "plain",
+        "reduction": "sum",
+        "presentation": "frequency",
+        "display_labels": [
+          "Darth Vader / blurred view",
+          "Haunted castle / fine detail"
+        ]
+      },
+      {
+        "id": "terminator-rose",
+        "method": "Grayscale / colour",
+        "theme": "Terminator / Red rose",
+        "style_label": "Surreal oil painting",
+        "style": "a detailed surreal oil painting of",
+        "prompts": [
+          "the Terminator's chrome robotic skull, a large centered face",
+          "a blooming red rose with vivid green leaves"
+        ],
+        "labels": [
+          "Terminator",
+          "Red rose"
+        ],
+        "views": [
+          "grayscale",
+          "color"
+        ],
+        "view_args": null,
+        "mode": "standard",
+        "steps": 30,
+        "guidance": 3,
+        "negative_prompt": "",
+        "seeds": [
+          141
+        ],
+        "view_seed": 141,
+        "quality_method": "plain",
+        "reduction": "sum",
+        "presentation": "color",
+        "display_labels": [
+          "Terminator / grayscale",
+          "Red rose / colour"
+        ]
+      }
+    ],
+    "features": {
+      "contrastive": {
+        "contrastive": true
+      },
+      "cross_negative": {
+        "cross_negative": "qwen"
+      },
+      "schedule": {
+        "guidance_schedule": "middle"
+      },
+      "conflict": {
+        "conflict_projection": true
+      },
+      "freeze": {
+        "freeze_below": 0.6
+      },
+      "component": {
+        "component_guidance": true
+      }
+    },
+    "screen": [
+      [
+        "venom-spawn",
+        "contrastive"
+      ],
+      [
+        "venom-spawn",
+        "cross_negative"
+      ],
+      [
+        "venom-spawn",
+        "schedule"
+      ],
+      [
+        "venom-spawn",
+        "conflict"
+      ],
+      [
+        "venom-spawn",
+        "freeze"
+      ],
+      [
+        "vader-castle-hybrid",
+        "component"
+      ],
+      [
+        "terminator-rose",
+        "component"
+      ]
+    ],
+    "steps": 30,
+    "guidance": 3,
+    "shift": 8,
+    "solver_order": 2,
+    "resolution": [
+      1024,
+      1024
+    ],
+    "model": "Aikimi/iris-3b-int8",
+    "model_revision": "6231647d02bb538b401a675061c11c7a64bba81f",
+    "code_revision": "a8d15239dea469aba042cfa56ca3bb4e450d5ebc",
+    "text_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+    "source_hashes": {
+      "visual_anagrams/iris.py": "4a671a71734b6ee258779679b53e73b1e7f1c31c2019a2a890be1f0cc0a5c1e5",
+      "visual_anagrams/balancing.py": "adc53924023585941bb894097ed019edb63307676d1831c0d7c9e1a2ea192912",
+      "visual_anagrams/quality_experiments.py": "ccfb8fc1267123ddb8a109db1d0a6196fb4d96d146a71abcc112b9eb4f96bd64",
+      "visual_anagrams/negative_planner.py": "16170b1e890c4ddd6a4abcf2d270ea5c73962681241f0a445bc07dec61258233"
+    },
+    "baseline_sources": {
+      "venom-spawn": "results/showcase_v3_candidates_20261025/venom-spawn/0121",
+      "hulk-loki-jigsaw": "results/showcase_v3_refinements_20261025/hulk-loki-jigsaw/0161",
+      "vader-castle-hybrid": "results/showcase_v3_candidates_20261025/vader-castle-hybrid/0131",
+      "terminator-rose": "results/showcase_v3_candidates_20261025/terminator-rose/0141"
+    },
+    "criteria": "Promote only after visual review and confirmation on a second case, with no material weaker-view regression. Component methods require both perceptual views to remain readable. Scores alone do not establish quality."
+  },
+  "scorer": {
+    "model": "openai/clip-vit-large-patch14",
+    "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+    "device": "cpu"
+  },
+  "results": [
+    {
+      "case_id": "venom-spawn",
+      "mode": "standard",
+      "steps": 30,
+      "guidance": 3,
+      "shift": 8,
+      "quality_method": "adaptive",
+      "reduction": "mean",
+      "seed": 121,
+      "view_seed": 121,
+      "negative_prompt": "",
+      "seconds": 405.29112900048494,
+      "peak_allocated_gib": 6.9226250648498535,
+      "image_sha256": "5411e513a938f6ff227742a358ba618a73f7d2508f55e4541742d83127864031",
+      "diagnostics": {
+        "method": "adaptive",
+        "scorer": {
+          "model": "openai/clip-vit-base-patch32",
+          "revision": "3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268",
+          "device": "cpu"
+        },
+        "interval": 2,
+        "temperature": 10.0,
+        "desired_weight_bounds": [
+          0.25,
+          0.75
+        ],
+        "smoothing": 0.5,
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "scores": [
+              0.3395404815673828,
+              0.3569299280643463
+            ],
+            "weights": [
+              0.5216822028160095,
+              0.4783177971839905
+            ]
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "scores": null,
+            "weights": [
+              0.5216822028160095,
+              0.4783177971839905
+            ]
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "scores": [
+              0.3323807418346405,
+              0.38524556159973145
+            ],
+            "weights": [
+              0.5754250288009644,
+              0.4245750308036804
+            ]
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "scores": null,
+            "weights": [
+              0.5754250288009644,
+              0.4245750308036804
+            ]
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "scores": [
+              0.3435506224632263,
+              0.3841620087623596
+            ],
+            "weights": [
+              0.5877903699874878,
+              0.412209689617157
+            ]
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "scores": null,
+            "weights": [
+              0.5877903699874878,
+              0.412209689617157
+            ]
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "scores": [
+              0.33952468633651733,
+              0.38221219182014465
+            ],
+            "weights": [
+              0.5964587926864624,
+              0.4035412669181824
+            ]
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "scores": null,
+            "weights": [
+              0.5964587926864624,
+              0.4035412669181824
+            ]
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "scores": [
+              0.3472062945365906,
+              0.3748966455459595
+            ],
+            "weights": [
+              0.5826228857040405,
+              0.41737720370292664
+            ]
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "scores": null,
+            "weights": [
+              0.5826228857040405,
+              0.41737720370292664
+            ]
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "scores": [
+              0.35220324993133545,
+              0.369364857673645
+            ],
+            "weights": [
+              0.5627109408378601,
+              0.4372890889644623
+            ]
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "scores": null,
+            "weights": [
+              0.5627109408378601,
+              0.4372890889644623
+            ]
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "scores": [
+              0.35316550731658936,
+              0.3695988059043884
+            ],
+            "weights": [
+              0.5518510341644287,
+              0.44814902544021606
+            ]
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "scores": null,
+            "weights": [
+              0.5518510341644287,
+              0.44814902544021606
+            ]
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "scores": [
+              0.35063236951828003,
+              0.3752582371234894
+            ],
+            "weights": [
+              0.5565532445907593,
+              0.4434468150138855
+            ]
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "scores": null,
+            "weights": [
+              0.5565532445907593,
+              0.4434468150138855
+            ]
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "scores": [
+              0.34919023513793945,
+              0.3741348385810852
+            ],
+            "weights": [
+              0.5592966675758362,
+              0.4407033324241638
+            ]
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "scores": null,
+            "weights": [
+              0.5592966675758362,
+              0.4407033324241638
+            ]
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "scores": [
+              0.3510925769805908,
+              0.363984614610672
+            ],
+            "weights": [
+              0.545741081237793,
+              0.45425891876220703
+            ]
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "scores": null,
+            "weights": [
+              0.545741081237793,
+              0.45425891876220703
+            ]
+          }
+        ]
+      },
+      "feature": "baseline",
+      "experiments": {
+        "contrastive": false,
+        "cross_negative": "off",
+        "cross_strength": 0.5,
+        "component_guidance": false,
+        "guidance_schedule": "constant",
+        "guidance_low": 0.1,
+        "guidance_high": 0.9,
+        "guidance_ramp": 0.05,
+        "conflict_projection": false,
+        "conflict_strength": 0.5,
+        "freeze_below": 0.0
+      },
+      "reused_from": "results/showcase_v3_candidates_20261025/venom-spawn/0121",
+      "evaluation": {
+        "model": "openai/clip-vit-large-patch14",
+        "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+        "prompts": [
+          "a dramatic dark comic book portrait of Venom, a black symbiote with large white eyes, sharp teeth and a long tongue",
+          "a dramatic dark comic book portrait of Spawn, a black masked antihero with glowing green eyes and a flowing red cape"
+        ],
+        "image_sha256": "5411e513a938f6ff227742a358ba618a73f7d2508f55e4541742d83127864031",
+        "scores": [
+          0.31056666374206543,
+          0.28040575981140137
+        ],
+        "weaker_view": 0.28040575981140137,
+        "similarity_matrix": [
+          [
+            0.31056666374206543,
+            0.2495630830526352
+          ],
+          [
+            0.3048785924911499,
+            0.28040575981140137
+          ]
+        ],
+        "minimum_prompt_margin": -0.024472832679748535
+      },
+      "balance_updates": 10,
+      "projected_steps": 0,
+      "component_updates": 0,
+      "image_file": "venom-spawn-baseline.png"
+    },
+    {
+      "case_id": "venom-spawn",
+      "feature": "contrastive",
+      "steps": 30,
+      "guidance": 3,
+      "shift": 8,
+      "solver_order": 2,
+      "mode": "standard",
+      "quality_method": "adaptive",
+      "reduction": "mean",
+      "seed": 121,
+      "view_seed": 121,
+      "seconds": 404.64214670006186,
+      "peak_allocated_gib": 6.921726703643799,
+      "experiments": {
+        "contrastive": true,
+        "cross_negative": "off",
+        "cross_strength": 0.5,
+        "component_guidance": false,
+        "guidance_schedule": "constant",
+        "guidance_low": 0.1,
+        "guidance_high": 0.9,
+        "guidance_ramp": 0.05,
+        "conflict_projection": false,
+        "conflict_strength": 0.5,
+        "freeze_below": 0.0
+      },
+      "image_sha256": "e55479c2d1528640e425f9d8c0457824def59fa7b712f5508cbbbf3427b5da07",
+      "diagnostics": {
+        "options": {
+          "contrastive": true,
+          "cross_negative": "off",
+          "cross_strength": 0.5,
+          "component_guidance": false,
+          "guidance_schedule": "constant",
+          "guidance_low": 0.1,
+          "guidance_high": 0.9,
+          "guidance_ramp": 0.05,
+          "conflict_projection": false,
+          "conflict_strength": 0.5,
+          "freeze_below": 0.0
+        },
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "guidance_scale": 3,
+            "conflict": null
+          }
+        ]
+      },
+      "balancing": {
+        "method": "adaptive",
+        "scorer": {
+          "model": "openai/clip-vit-base-patch32",
+          "revision": "3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268",
+          "device": "cpu"
+        },
+        "interval": 2,
+        "temperature": 10.0,
+        "desired_weight_bounds": [
+          0.25,
+          0.75
+        ],
+        "smoothing": 0.5,
+        "contrastive": true,
+        "freeze_below": 0.0,
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "scores": [
+              0.3395404815673828,
+              0.3569299280643463
+            ],
+            "weights": [
+              0.5713546872138977,
+              0.4286453127861023
+            ],
+            "margins": [
+              -0.01874476671218872,
+              0.03996953368186951
+            ],
+            "similarity_matrix": [
+              [
+                0.3395404815673828,
+                0.35828524827957153
+              ],
+              [
+                0.3169603943824768,
+                0.3569299280643463
+              ]
+            ]
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "scores": null,
+            "weights": [
+              0.5713546872138977,
+              0.4286453127861023
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "scores": [
+              0.33238497376441956,
+              0.3823864758014679
+            ],
+            "weights": [
+              0.6606773138046265,
+              0.33932265639305115
+            ],
+            "margins": [
+              -0.04300069808959961,
+              0.0774666965007782
+            ],
+            "similarity_matrix": [
+              [
+                0.33238497376441956,
+                0.37538567185401917
+              ],
+              [
+                0.3049197793006897,
+                0.3823864758014679
+              ]
+            ]
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "scores": null,
+            "weights": [
+              0.6606773138046265,
+              0.33932265639305115
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "scores": [
+              0.3399946093559265,
+              0.3893762528896332
+            ],
+            "weights": [
+              0.7053386569023132,
+              0.29466134309768677
+            ],
+            "margins": [
+              -0.03240230679512024,
+              0.09213390946388245
+            ],
+            "similarity_matrix": [
+              [
+                0.3399946093559265,
+                0.37239691615104675
+              ],
+              [
+                0.29724234342575073,
+                0.3893762528896332
+              ]
+            ]
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "scores": null,
+            "weights": [
+              0.7053386569023132,
+              0.29466134309768677
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "scores": [
+              0.3230564296245575,
+              0.37744140625
+            ],
+            "weights": [
+              0.727669358253479,
+              0.2723306715488434
+            ],
+            "margins": [
+              -0.05425700545310974,
+              0.08283817768096924
+            ],
+            "similarity_matrix": [
+              [
+                0.3230564296245575,
+                0.37731343507766724
+              ],
+              [
+                0.29460322856903076,
+                0.37744140625
+              ]
+            ]
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "scores": null,
+            "weights": [
+              0.727669358253479,
+              0.2723306715488434
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "scores": [
+              0.33201324939727783,
+              0.37732070684432983
+            ],
+            "weights": [
+              0.7303164601325989,
+              0.2696835696697235
+            ],
+            "margins": [
+              -0.038804590702056885,
+              0.0621664822101593
+            ],
+            "similarity_matrix": [
+              [
+                0.33201324939727783,
+                0.3708178400993347
+              ],
+              [
+                0.31515422463417053,
+                0.37732070684432983
+              ]
+            ]
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "scores": null,
+            "weights": [
+              0.7303164601325989,
+              0.2696835696697235
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "scores": [
+              0.34754443168640137,
+              0.3755316436290741
+            ],
+            "weights": [
+              0.6936062574386597,
+              0.3063938021659851
+            ],
+            "margins": [
+              -0.009635448455810547,
+              0.05531376600265503
+            ],
+            "similarity_matrix": [
+              [
+                0.34754443168640137,
+                0.3571798801422119
+              ],
+              [
+                0.32021787762641907,
+                0.3755316436290741
+              ]
+            ]
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "scores": null,
+            "weights": [
+              0.6936062574386597,
+              0.3063938021659851
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "scores": [
+              0.35345935821533203,
+              0.37724828720092773
+            ],
+            "weights": [
+              0.6513673663139343,
+              0.34863269329071045
+            ],
+            "margins": [
+              0.005032449960708618,
+              0.04939746856689453
+            ],
+            "similarity_matrix": [
+              [
+                0.35345935821533203,
+                0.3484269082546234
+              ],
+              [
+                0.3278508186340332,
+                0.37724828720092773
+              ]
+            ]
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "scores": null,
+            "weights": [
+              0.6513673663139343,
+              0.34863269329071045
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "scores": [
+              0.3519233465194702,
+              0.3751802444458008
+            ],
+            "weights": [
+              0.6267862319946289,
+              0.37321382761001587
+            ],
+            "margins": [
+              0.003693521022796631,
+              0.04515963792800903
+            ],
+            "similarity_matrix": [
+              [
+                0.3519233465194702,
+                0.3482298254966736
+              ],
+              [
+                0.33002060651779175,
+                0.3751802444458008
+              ]
+            ]
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "scores": null,
+            "weights": [
+              0.6267862319946289,
+              0.37321382761001587
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "scores": [
+              0.3509570062160492,
+              0.37751084566116333
+            ],
+            "weights": [
+              0.617768406867981,
+              0.3822316527366638
+            ],
+            "margins": [
+              0.0042979419231414795,
+              0.048504263162612915
+            ],
+            "similarity_matrix": [
+              [
+                0.3509570062160492,
+                0.3466590642929077
+              ],
+              [
+                0.3290065824985504,
+                0.37751084566116333
+              ]
+            ]
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "scores": null,
+            "weights": [
+              0.617768406867981,
+              0.3822316527366638
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "scores": [
+              0.3490505814552307,
+              0.37206918001174927
+            ],
+            "weights": [
+              0.6062937378883362,
+              0.3937062919139862
+            ],
+            "margins": [
+              0.005550801753997803,
+              0.043943166732788086
+            ],
+            "similarity_matrix": [
+              [
+                0.3490505814552307,
+                0.3434997797012329
+              ],
+              [
+                0.3281260132789612,
+                0.37206918001174927
+              ]
+            ]
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "scores": null,
+            "weights": [
+              0.6062937378883362,
+              0.3937062919139862
+            ],
+            "margins": null,
+            "similarity_matrix": null
+          }
+        ]
+      },
+      "negative_plan": null,
+      "evaluation": {
+        "model": "openai/clip-vit-large-patch14",
+        "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+        "prompts": [
+          "a dramatic dark comic book portrait of Venom, a black symbiote with large white eyes, sharp teeth and a long tongue",
+          "a dramatic dark comic book portrait of Spawn, a black masked antihero with glowing green eyes and a flowing red cape"
+        ],
+        "image_sha256": "e55479c2d1528640e425f9d8c0457824def59fa7b712f5508cbbbf3427b5da07",
+        "scores": [
+          0.3294472396373749,
+          0.26842671632766724
+        ],
+        "weaker_view": 0.26842671632766724,
+        "similarity_matrix": [
+          [
+            0.3294472396373749,
+            0.25096529722213745
+          ],
+          [
+            0.31578296422958374,
+            0.26842671632766724
+          ]
+        ],
+        "minimum_prompt_margin": -0.047356247901916504
+      },
+      "balance_updates": 10,
+      "projected_steps": 0,
+      "component_updates": 0,
+      "image_file": "venom-spawn-contrastive.png"
+    },
+    {
+      "case_id": "venom-spawn",
+      "feature": "cross_negative",
+      "steps": 30,
+      "guidance": 3,
+      "shift": 8,
+      "solver_order": 2,
+      "mode": "standard",
+      "quality_method": "adaptive",
+      "reduction": "mean",
+      "seed": 121,
+      "view_seed": 121,
+      "seconds": 600.2904043002054,
+      "peak_allocated_gib": 6.980353832244873,
+      "experiments": {
+        "contrastive": false,
+        "cross_negative": "qwen",
+        "cross_strength": 0.5,
+        "component_guidance": false,
+        "guidance_schedule": "constant",
+        "guidance_low": 0.1,
+        "guidance_high": 0.9,
+        "guidance_ramp": 0.05,
+        "conflict_projection": false,
+        "conflict_strength": 0.5,
+        "freeze_below": 0.0
+      },
+      "image_sha256": "365b7e89e141ca8fedad8526140758a2e25097f9b504f58db9773475949cbfd1",
+      "diagnostics": {
+        "options": {
+          "contrastive": false,
+          "cross_negative": "qwen",
+          "cross_strength": 0.5,
+          "component_guidance": false,
+          "guidance_schedule": "constant",
+          "guidance_low": 0.1,
+          "guidance_high": 0.9,
+          "guidance_ramp": 0.05,
+          "conflict_projection": false,
+          "conflict_strength": 0.5,
+          "freeze_below": 0.0
+        },
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "guidance_scale": 3,
+            "conflict": null
+          }
+        ]
+      },
+      "balancing": {
+        "method": "adaptive",
+        "scorer": {
+          "model": "openai/clip-vit-base-patch32",
+          "revision": "3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268",
+          "device": "cpu"
+        },
+        "interval": 2,
+        "temperature": 10.0,
+        "desired_weight_bounds": [
+          0.25,
+          0.75
+        ],
+        "smoothing": 0.5,
+        "contrastive": false,
+        "freeze_below": 0.0,
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "scores": [
+              0.331406831741333,
+              0.3437134325504303
+            ],
+            "weights": [
+              0.515363872051239,
+              0.484636127948761
+            ]
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "scores": null,
+            "weights": [
+              0.515363872051239,
+              0.484636127948761
+            ]
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "scores": [
+              0.34173309803009033,
+              0.35268718004226685
+            ],
+            "weights": [
+              0.5213608741760254,
+              0.478639155626297
+            ]
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "scores": null,
+            "weights": [
+              0.5213608741760254,
+              0.478639155626297
+            ]
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "scores": [
+              0.34365177154541016,
+              0.3668968081474304
+            ],
+            "weights": [
+              0.5396066308021545,
+              0.46039342880249023
+            ]
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "scores": null,
+            "weights": [
+              0.5396066308021545,
+              0.46039342880249023
+            ]
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "scores": [
+              0.3454326391220093,
+              0.37634414434432983
+            ],
+            "weights": [
+              0.5581379532814026,
+              0.4418620765209198
+            ]
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "scores": null,
+            "weights": [
+              0.5581379532814026,
+              0.4418620765209198
+            ]
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "scores": [
+              0.3404117226600647,
+              0.3763453960418701
+            ],
+            "weights": [
+              0.5735089182853699,
+              0.4264910817146301
+            ]
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "scores": null,
+            "weights": [
+              0.5735089182853699,
+              0.4264910817146301
+            ]
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "scores": [
+              0.3409654498100281,
+              0.37798261642456055
+            ],
+            "weights": [
+              0.5825046896934509,
+              0.4174953103065491
+            ]
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "scores": null,
+            "weights": [
+              0.5825046896934509,
+              0.4174953103065491
+            ]
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "scores": [
+              0.3399012088775635,
+              0.36152544617652893
+            ],
+            "weights": [
+              0.5681778192520142,
+              0.4318222105503082
+            ]
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "scores": null,
+            "weights": [
+              0.5681778192520142,
+              0.4318222105503082
+            ]
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "scores": [
+              0.33727502822875977,
+              0.35786646604537964
+            ],
+            "weights": [
+              0.5597376823425293,
+              0.4402623772621155
+            ]
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "scores": null,
+            "weights": [
+              0.5597376823425293,
+              0.4402623772621155
+            ]
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "scores": [
+              0.3327997326850891,
+              0.3652684688568115
+            ],
+            "weights": [
+              0.5701019763946533,
+              0.42989808320999146
+            ]
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "scores": null,
+            "weights": [
+              0.5701019763946533,
+              0.42989808320999146
+            ]
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "scores": [
+              0.33446067571640015,
+              0.36388376355171204
+            ],
+            "weights": [
+              0.5715667605400085,
+              0.42843323945999146
+            ]
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "scores": null,
+            "weights": [
+              0.5715667605400085,
+              0.42843323945999146
+            ]
+          }
+        ]
+      },
+      "negative_plan": {
+        "mode": "qwen",
+        "subjects": [
+          "Venom",
+          "Spawn"
+        ],
+        "view_negative_prompts": [
+          "Spawn",
+          "Venom"
+        ],
+        "llm_response": "{\"subjects\":[\"Venom\",\"Spawn\"]}"
+      },
+      "evaluation": {
+        "model": "openai/clip-vit-large-patch14",
+        "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+        "prompts": [
+          "a dramatic dark comic book portrait of Venom, a black symbiote with large white eyes, sharp teeth and a long tongue",
+          "a dramatic dark comic book portrait of Spawn, a black masked antihero with glowing green eyes and a flowing red cape"
+        ],
+        "image_sha256": "365b7e89e141ca8fedad8526140758a2e25097f9b504f58db9773475949cbfd1",
+        "scores": [
+          0.31393781304359436,
+          0.2937431335449219
+        ],
+        "weaker_view": 0.2937431335449219,
+        "similarity_matrix": [
+          [
+            0.31393781304359436,
+            0.2752038836479187
+          ],
+          [
+            0.30400943756103516,
+            0.2937431335449219
+          ]
+        ],
+        "minimum_prompt_margin": -0.010266304016113281
+      },
+      "balance_updates": 10,
+      "projected_steps": 0,
+      "component_updates": 0,
+      "image_file": "venom-spawn-cross_negative.png"
+    },
+    {
+      "case_id": "venom-spawn",
+      "feature": "schedule",
+      "steps": 30,
+      "guidance": 3,
+      "shift": 8,
+      "solver_order": 2,
+      "mode": "standard",
+      "quality_method": "adaptive",
+      "reduction": "mean",
+      "seed": 121,
+      "view_seed": 121,
+      "seconds": 298.79058420006186,
+      "peak_allocated_gib": 6.921726703643799,
+      "experiments": {
+        "contrastive": false,
+        "cross_negative": "off",
+        "cross_strength": 0.5,
+        "component_guidance": false,
+        "guidance_schedule": "middle",
+        "guidance_low": 0.1,
+        "guidance_high": 0.9,
+        "guidance_ramp": 0.05,
+        "conflict_projection": false,
+        "conflict_strength": 0.5,
+        "freeze_below": 0.0
+      },
+      "image_sha256": "6f88d562453643ce7b839cda153ff34ea5b45607057c9492b9346662b6df614f",
+      "diagnostics": {
+        "options": {
+          "contrastive": false,
+          "cross_negative": "off",
+          "cross_strength": 0.5,
+          "component_guidance": false,
+          "guidance_schedule": "middle",
+          "guidance_low": 0.1,
+          "guidance_high": 0.9,
+          "guidance_ramp": 0.05,
+          "conflict_projection": false,
+          "conflict_strength": 0.5,
+          "freeze_below": 0.0
+        },
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "guidance_scale": 1.0,
+            "conflict": null
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "guidance_scale": 1.2606518651322656,
+            "conflict": null
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "guidance_scale": 2.012315397088872,
+            "conflict": null
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "guidance_scale": 2.818494199526803,
+            "conflict": null
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "guidance_scale": 3.0,
+            "conflict": null
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "guidance_scale": 3.0,
+            "conflict": null
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "guidance_scale": 3.0,
+            "conflict": null
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "guidance_scale": 3.0,
+            "conflict": null
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "guidance_scale": 3.0,
+            "conflict": null
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "guidance_scale": 3.0,
+            "conflict": null
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "guidance_scale": 3.0,
+            "conflict": null
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "guidance_scale": 3.0,
+            "conflict": null
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "guidance_scale": 3.0,
+            "conflict": null
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "guidance_scale": 3.0,
+            "conflict": null
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "guidance_scale": 3.0,
+            "conflict": null
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "guidance_scale": 3.0,
+            "conflict": null
+          }
+        ]
+      },
+      "balancing": {
+        "method": "adaptive",
+        "scorer": {
+          "model": "openai/clip-vit-base-patch32",
+          "revision": "3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268",
+          "device": "cpu"
+        },
+        "interval": 2,
+        "temperature": 10.0,
+        "desired_weight_bounds": [
+          0.25,
+          0.75
+        ],
+        "smoothing": 0.5,
+        "contrastive": false,
+        "freeze_below": 0.0,
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "scores": [
+              0.28275856375694275,
+              0.3370822072029114
+            ],
+            "weights": [
+              0.5662824511528015,
+              0.4337175488471985
+            ]
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "scores": null,
+            "weights": [
+              0.5662824511528015,
+              0.4337175488471985
+            ]
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "scores": [
+              0.2864896059036255,
+              0.34874382615089417
+            ],
+            "weights": [
+              0.6085394620895386,
+              0.3914605379104614
+            ]
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "scores": null,
+            "weights": [
+              0.6085394620895386,
+              0.3914605379104614
+            ]
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "scores": [
+              0.28161537647247314,
+              0.34251901507377625
+            ],
+            "weights": [
+              0.6281301975250244,
+              0.3718698024749756
+            ]
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "scores": null,
+            "weights": [
+              0.6281301975250244,
+              0.3718698024749756
+            ]
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "scores": [
+              0.28505489230155945,
+              0.3474101424217224
+            ],
+            "weights": [
+              0.639578104019165,
+              0.3604218363761902
+            ]
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "scores": null,
+            "weights": [
+              0.639578104019165,
+              0.3604218363761902
+            ]
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "scores": [
+              0.2848462760448456,
+              0.36597442626953125
+            ],
+            "weights": [
+              0.665980339050293,
+              0.33401966094970703
+            ]
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "scores": null,
+            "weights": [
+              0.665980339050293,
+              0.33401966094970703
+            ]
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "scores": [
+              0.28081953525543213,
+              0.3658973276615143
+            ],
+            "weights": [
+              0.6833553314208984,
+              0.31664466857910156
+            ]
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "scores": null,
+            "weights": [
+              0.6833553314208984,
+              0.31664466857910156
+            ]
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "scores": [
+              0.2819829285144806,
+              0.3640623688697815
+            ],
+            "weights": [
+              0.6888800859451294,
+              0.31111985445022583
+            ]
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "scores": null,
+            "weights": [
+              0.6888800859451294,
+              0.31111985445022583
+            ]
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "scores": [
+              0.28903186321258545,
+              0.3599429726600647
+            ],
+            "weights": [
+              0.6795424222946167,
+              0.3204575777053833
+            ]
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "scores": null,
+            "weights": [
+              0.6795424222946167,
+              0.3204575777053833
+            ]
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "scores": [
+              0.2959126830101013,
+              0.35323357582092285
+            ],
+            "weights": [
+              0.6595228314399719,
+              0.3404771685600281
+            ]
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "scores": null,
+            "weights": [
+              0.6595228314399719,
+              0.3404771685600281
+            ]
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "scores": [
+              0.2963669002056122,
+              0.34929782152175903
+            ],
+            "weights": [
+              0.6444224119186401,
+              0.35557761788368225
+            ]
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "scores": null,
+            "weights": [
+              0.6444224119186401,
+              0.35557761788368225
+            ]
+          }
+        ]
+      },
+      "negative_plan": null,
+      "evaluation": {
+        "model": "openai/clip-vit-large-patch14",
+        "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+        "prompts": [
+          "a dramatic dark comic book portrait of Venom, a black symbiote with large white eyes, sharp teeth and a long tongue",
+          "a dramatic dark comic book portrait of Spawn, a black masked antihero with glowing green eyes and a flowing red cape"
+        ],
+        "image_sha256": "6f88d562453643ce7b839cda153ff34ea5b45607057c9492b9346662b6df614f",
+        "scores": [
+          0.22956520318984985,
+          0.2862878441810608
+        ],
+        "weaker_view": 0.22956520318984985,
+        "similarity_matrix": [
+          [
+            0.22956520318984985,
+            0.28341859579086304
+          ],
+          [
+            0.23486509919166565,
+            0.2862878441810608
+          ]
+        ],
+        "minimum_prompt_margin": -0.053853392601013184
+      },
+      "balance_updates": 10,
+      "projected_steps": 0,
+      "component_updates": 0,
+      "image_file": "venom-spawn-schedule.png"
+    },
+    {
+      "case_id": "venom-spawn",
+      "feature": "conflict",
+      "steps": 30,
+      "guidance": 3,
+      "shift": 8,
+      "solver_order": 2,
+      "mode": "standard",
+      "quality_method": "adaptive",
+      "reduction": "mean",
+      "seed": 121,
+      "view_seed": 121,
+      "seconds": 403.6405318994075,
+      "peak_allocated_gib": 6.944971561431885,
+      "experiments": {
+        "contrastive": false,
+        "cross_negative": "off",
+        "cross_strength": 0.5,
+        "component_guidance": false,
+        "guidance_schedule": "constant",
+        "guidance_low": 0.1,
+        "guidance_high": 0.9,
+        "guidance_ramp": 0.05,
+        "conflict_projection": true,
+        "conflict_strength": 0.5,
+        "freeze_below": 0.0
+      },
+      "image_sha256": "10b3a80bcf7eebc63f590c7916b465884e6b5d500f28260924e2cee80b9c767f",
+      "diagnostics": {
+        "options": {
+          "contrastive": false,
+          "cross_negative": "off",
+          "cross_strength": 0.5,
+          "component_guidance": false,
+          "guidance_schedule": "constant",
+          "guidance_low": 0.1,
+          "guidance_high": 0.9,
+          "guidance_ramp": 0.05,
+          "conflict_projection": true,
+          "conflict_strength": 0.5,
+          "freeze_below": 0.0
+        },
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.22235067188739777,
+              "projected": true
+            }
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.18520085513591766,
+              "projected": true
+            }
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.163475900888443,
+              "projected": true
+            }
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.1058838739991188,
+              "projected": true
+            }
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.11417427659034729,
+              "projected": true
+            }
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.11294009536504745,
+              "projected": true
+            }
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.13559289276599884,
+              "projected": true
+            }
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.11594752967357635,
+              "projected": true
+            }
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.13276396691799164,
+              "projected": true
+            }
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.1441890150308609,
+              "projected": true
+            }
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.15112189948558807,
+              "projected": true
+            }
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.15178628265857697,
+              "projected": true
+            }
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.15192466974258423,
+              "projected": true
+            }
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.151565819978714,
+              "projected": true
+            }
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.14724040031433105,
+              "projected": true
+            }
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.1343727856874466,
+              "projected": true
+            }
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.10020098090171814,
+              "projected": true
+            }
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.09846986085176468,
+              "projected": true
+            }
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.07811909914016724,
+              "projected": true
+            }
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.031003640964627266,
+              "projected": true
+            }
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": 0.021472258493304253,
+              "projected": false
+            }
+          }
+        ]
+      },
+      "balancing": {
+        "method": "adaptive",
+        "scorer": {
+          "model": "openai/clip-vit-base-patch32",
+          "revision": "3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268",
+          "device": "cpu"
+        },
+        "interval": 2,
+        "temperature": 10.0,
+        "desired_weight_bounds": [
+          0.25,
+          0.75
+        ],
+        "smoothing": 0.5,
+        "contrastive": false,
+        "freeze_below": 0.0,
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "scores": [
+              0.33616840839385986,
+              0.36110180616378784
+            ],
+            "weights": [
+              0.5310063362121582,
+              0.4689937233924866
+            ]
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "scores": null,
+            "weights": [
+              0.5310063362121582,
+              0.4689937233924866
+            ]
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "scores": [
+              0.3360481262207031,
+              0.38555270433425903
+            ],
+            "weights": [
+              0.5761502981185913,
+              0.4238497018814087
+            ]
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "scores": null,
+            "weights": [
+              0.5761502981185913,
+              0.4238497018814087
+            ]
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "scores": [
+              0.3448806405067444,
+              0.3748602867126465
+            ],
+            "weights": [
+              0.5752715468406677,
+              0.4247284531593323
+            ]
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "scores": null,
+            "weights": [
+              0.5752715468406677,
+              0.4247284531593323
+            ]
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "scores": [
+              0.35218381881713867,
+              0.37627357244491577
+            ],
+            "weights": [
+              0.5676032304763794,
+              0.432396799325943
+            ]
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "scores": null,
+            "weights": [
+              0.5676032304763794,
+              0.432396799325943
+            ]
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "scores": [
+              0.34926801919937134,
+              0.3700093626976013
+            ],
+            "weights": [
+              0.5596357583999634,
+              0.4403642416000366
+            ]
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "scores": null,
+            "weights": [
+              0.5596357583999634,
+              0.4403642416000366
+            ]
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "scores": [
+              0.35438773036003113,
+              0.36761772632598877
+            ],
+            "weights": [
+              0.5463312864303589,
+              0.4536687135696411
+            ]
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "scores": null,
+            "weights": [
+              0.5463312864303589,
+              0.4536687135696411
+            ]
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "scores": [
+              0.35791605710983276,
+              0.370728075504303
+            ],
+            "weights": [
+              0.5391587615013123,
+              0.46084123849868774
+            ]
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "scores": null,
+            "weights": [
+              0.5391587615013123,
+              0.46084123849868774
+            ]
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "scores": [
+              0.34762251377105713,
+              0.37935715913772583
+            ],
+            "weights": [
+              0.5589181184768677,
+              0.4410819411277771
+            ]
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "scores": null,
+            "weights": [
+              0.5589181184768677,
+              0.4410819411277771
+            ]
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "scores": [
+              0.34781527519226074,
+              0.37036389112472534
+            ],
+            "weights": [
+              0.5575259923934937,
+              0.44247400760650635
+            ]
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "scores": null,
+            "weights": [
+              0.5575259923934937,
+              0.44247400760650635
+            ]
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "scores": [
+              0.34807711839675903,
+              0.36759859323501587
+            ],
+            "weights": [
+              0.553087592124939,
+              0.44691234827041626
+            ]
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "scores": null,
+            "weights": [
+              0.553087592124939,
+              0.44691234827041626
+            ]
+          }
+        ]
+      },
+      "negative_plan": null,
+      "evaluation": {
+        "model": "openai/clip-vit-large-patch14",
+        "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+        "prompts": [
+          "a dramatic dark comic book portrait of Venom, a black symbiote with large white eyes, sharp teeth and a long tongue",
+          "a dramatic dark comic book portrait of Spawn, a black masked antihero with glowing green eyes and a flowing red cape"
+        ],
+        "image_sha256": "10b3a80bcf7eebc63f590c7916b465884e6b5d500f28260924e2cee80b9c767f",
+        "scores": [
+          0.3093578815460205,
+          0.28652578592300415
+        ],
+        "weaker_view": 0.28652578592300415,
+        "similarity_matrix": [
+          [
+            0.3093578815460205,
+            0.2513660192489624
+          ],
+          [
+            0.2989377975463867,
+            0.28652578592300415
+          ]
+        ],
+        "minimum_prompt_margin": -0.012412011623382568
+      },
+      "balance_updates": 10,
+      "projected_steps": 20,
+      "component_updates": 0,
+      "image_file": "venom-spawn-conflict.png"
+    },
+    {
+      "case_id": "venom-spawn",
+      "feature": "freeze",
+      "steps": 30,
+      "guidance": 3,
+      "shift": 8,
+      "solver_order": 2,
+      "mode": "standard",
+      "quality_method": "adaptive",
+      "reduction": "mean",
+      "seed": 121,
+      "view_seed": 121,
+      "seconds": 396.6914735995233,
+      "peak_allocated_gib": 6.921726703643799,
+      "experiments": {
+        "contrastive": false,
+        "cross_negative": "off",
+        "cross_strength": 0.5,
+        "component_guidance": false,
+        "guidance_schedule": "constant",
+        "guidance_low": 0.1,
+        "guidance_high": 0.9,
+        "guidance_ramp": 0.05,
+        "conflict_projection": false,
+        "conflict_strength": 0.5,
+        "freeze_below": 0.6
+      },
+      "image_sha256": "f1d8061b71f905199b79645a63fa61540638b93e8c0bd70484f1c7687888d4c6",
+      "diagnostics": {
+        "options": {
+          "contrastive": false,
+          "cross_negative": "off",
+          "cross_strength": 0.5,
+          "component_guidance": false,
+          "guidance_schedule": "constant",
+          "guidance_low": 0.1,
+          "guidance_high": 0.9,
+          "guidance_ramp": 0.05,
+          "conflict_projection": false,
+          "conflict_strength": 0.5,
+          "freeze_below": 0.6
+        },
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "guidance_scale": 3,
+            "conflict": null
+          }
+        ]
+      },
+      "balancing": {
+        "method": "adaptive",
+        "scorer": {
+          "model": "openai/clip-vit-base-patch32",
+          "revision": "3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268",
+          "device": "cpu"
+        },
+        "interval": 2,
+        "temperature": 10.0,
+        "desired_weight_bounds": [
+          0.25,
+          0.75
+        ],
+        "smoothing": 0.5,
+        "contrastive": false,
+        "freeze_below": 0.6,
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "scores": [
+              0.3395404815673828,
+              0.3569299280643463
+            ],
+            "weights": [
+              0.5216822028160095,
+              0.4783177971839905
+            ]
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "scores": null,
+            "weights": [
+              0.5216822028160095,
+              0.4783177971839905
+            ]
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "scores": [
+              0.3323807418346405,
+              0.38524556159973145
+            ],
+            "weights": [
+              0.5754250288009644,
+              0.4245750308036804
+            ]
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "scores": null,
+            "weights": [
+              0.5754250288009644,
+              0.4245750308036804
+            ]
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "scores": [
+              0.3435506224632263,
+              0.3841620087623596
+            ],
+            "weights": [
+              0.5877903699874878,
+              0.412209689617157
+            ]
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "scores": null,
+            "weights": [
+              0.5877903699874878,
+              0.412209689617157
+            ]
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "scores": [
+              0.33952468633651733,
+              0.38221219182014465
+            ],
+            "weights": [
+              0.5964587926864624,
+              0.4035412669181824
+            ]
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "scores": null,
+            "weights": [
+              0.5964587926864624,
+              0.4035412669181824
+            ]
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "scores": [
+              0.3472062945365906,
+              0.3748966455459595
+            ],
+            "weights": [
+              0.5826228857040405,
+              0.41737720370292664
+            ]
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "scores": null,
+            "weights": [
+              0.5826228857040405,
+              0.41737720370292664
+            ]
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "scores": [
+              0.35220324993133545,
+              0.369364857673645
+            ],
+            "weights": [
+              0.5627109408378601,
+              0.4372890889644623
+            ]
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "scores": null,
+            "weights": [
+              0.5627109408378601,
+              0.4372890889644623
+            ]
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "scores": [
+              0.35316550731658936,
+              0.3695988059043884
+            ],
+            "weights": [
+              0.5518510341644287,
+              0.44814902544021606
+            ]
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "scores": null,
+            "weights": [
+              0.5518510341644287,
+              0.44814902544021606
+            ]
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "scores": [
+              0.35063236951828003,
+              0.3752582371234894
+            ],
+            "weights": [
+              0.5565532445907593,
+              0.4434468150138855
+            ]
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "scores": null,
+            "weights": [
+              0.5565532445907593,
+              0.4434468150138855
+            ]
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "scores": null,
+            "weights": [
+              0.5565532445907593,
+              0.4434468150138855
+            ]
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "scores": null,
+            "weights": [
+              0.5565532445907593,
+              0.4434468150138855
+            ]
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "scores": null,
+            "weights": [
+              0.5565532445907593,
+              0.4434468150138855
+            ]
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "scores": null,
+            "weights": [
+              0.5565532445907593,
+              0.4434468150138855
+            ]
+          }
+        ]
+      },
+      "negative_plan": null,
+      "evaluation": {
+        "model": "openai/clip-vit-large-patch14",
+        "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+        "prompts": [
+          "a dramatic dark comic book portrait of Venom, a black symbiote with large white eyes, sharp teeth and a long tongue",
+          "a dramatic dark comic book portrait of Spawn, a black masked antihero with glowing green eyes and a flowing red cape"
+        ],
+        "image_sha256": "f1d8061b71f905199b79645a63fa61540638b93e8c0bd70484f1c7687888d4c6",
+        "scores": [
+          0.31098008155822754,
+          0.2794179916381836
+        ],
+        "weaker_view": 0.2794179916381836,
+        "similarity_matrix": [
+          [
+            0.31098008155822754,
+            0.2531917691230774
+          ],
+          [
+            0.3046923875808716,
+            0.2794179916381836
+          ]
+        ],
+        "minimum_prompt_margin": -0.02527439594268799
+      },
+      "balance_updates": 8,
+      "projected_steps": 0,
+      "component_updates": 0,
+      "image_file": "venom-spawn-freeze.png"
+    },
+    {
+      "case_id": "hulk-loki-jigsaw",
+      "mode": "standard",
+      "steps": 30,
+      "guidance": 3,
+      "shift": 8,
+      "quality_method": "adaptive",
+      "reduction": "mean",
+      "seed": 161,
+      "view_seed": 161,
+      "negative_prompt": "",
+      "seconds": 401.3338890997693,
+      "peak_allocated_gib": 6.922135829925537,
+      "image_sha256": "b43796b020f7f24e4cf1c52fb4530ff7b8292f9b8f041383bd68b961acfe68d4",
+      "diagnostics": {
+        "method": "adaptive",
+        "scorer": {
+          "model": "openai/clip-vit-base-patch32",
+          "revision": "3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268",
+          "device": "cpu"
+        },
+        "interval": 2,
+        "temperature": 10.0,
+        "desired_weight_bounds": [
+          0.25,
+          0.75
+        ],
+        "smoothing": 0.5,
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "scores": [
+              0.35703766345977783,
+              0.346165269613266
+            ],
+            "weights": [
+              0.48642289638519287,
+              0.5135771036148071
+            ]
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "scores": null,
+            "weights": [
+              0.48642289638519287,
+              0.5135771036148071
+            ]
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "scores": [
+              0.36540454626083374,
+              0.3430183529853821
+            ],
+            "weights": [
+              0.46534496545791626,
+              0.5346550345420837
+            ]
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "scores": null,
+            "weights": [
+              0.46534496545791626,
+              0.5346550345420837
+            ]
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "scores": [
+              0.3814077377319336,
+              0.35186779499053955
+            ],
+            "weights": [
+              0.44601374864578247,
+              0.5539862513542175
+            ]
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "scores": null,
+            "weights": [
+              0.44601374864578247,
+              0.5539862513542175
+            ]
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "scores": [
+              0.39128655195236206,
+              0.3745707869529724
+            ],
+            "weights": [
+              0.45216068625450134,
+              0.5478392839431763
+            ]
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "scores": null,
+            "weights": [
+              0.45216068625450134,
+              0.5478392839431763
+            ]
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "scores": [
+              0.4072642922401428,
+              0.3899767994880676
+            ],
+            "weights": [
+              0.4545246362686157,
+              0.5454753637313843
+            ]
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "scores": null,
+            "weights": [
+              0.4545246362686157,
+              0.5454753637313843
+            ]
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "scores": [
+              0.4145243763923645,
+              0.3988601267337799
+            ],
+            "weights": [
+              0.4577219486236572,
+              0.5422780513763428
+            ]
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "scores": null,
+            "weights": [
+              0.4577219486236572,
+              0.5422780513763428
+            ]
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "scores": [
+              0.4194560647010803,
+              0.40848153829574585
+            ],
+            "weights": [
+              0.465156614780426,
+              0.5348434448242188
+            ]
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "scores": null,
+            "weights": [
+              0.465156614780426,
+              0.5348434448242188
+            ]
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "scores": [
+              0.41718050837516785,
+              0.4073401093482971
+            ],
+            "weights": [
+              0.4702877402305603,
+              0.5297123193740845
+            ]
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "scores": null,
+            "weights": [
+              0.4702877402305603,
+              0.5297123193740845
+            ]
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "scores": [
+              0.41555649042129517,
+              0.40826910734176636
+            ],
+            "weights": [
+              0.47603869438171387,
+              0.5239613056182861
+            ]
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "scores": null,
+            "weights": [
+              0.47603869438171387,
+              0.5239613056182861
+            ]
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "scores": [
+              0.4171193838119507,
+              0.40658244490623474
+            ],
+            "weights": [
+              0.4748603105545044,
+              0.5251396894454956
+            ]
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "scores": null,
+            "weights": [
+              0.4748603105545044,
+              0.5251396894454956
+            ]
+          }
+        ]
+      },
+      "feature": "baseline",
+      "experiments": {
+        "contrastive": false,
+        "cross_negative": "off",
+        "cross_strength": 0.5,
+        "component_guidance": false,
+        "guidance_schedule": "constant",
+        "guidance_low": 0.1,
+        "guidance_high": 0.9,
+        "guidance_ramp": 0.05,
+        "conflict_projection": false,
+        "conflict_strength": 0.5,
+        "freeze_below": 0.0
+      },
+      "reused_from": "results/showcase_v3_refinements_20261025/hulk-loki-jigsaw/0161",
+      "evaluation": {
+        "model": "openai/clip-vit-large-patch14",
+        "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+        "prompts": [
+          "a colorful mosaic portrait of the Hulk, an angry green face with black hair",
+          "a colorful mosaic portrait of Loki wearing a golden horned helmet"
+        ],
+        "image_sha256": "b43796b020f7f24e4cf1c52fb4530ff7b8292f9b8f041383bd68b961acfe68d4",
+        "scores": [
+          0.34613722562789917,
+          0.33233994245529175
+        ],
+        "weaker_view": 0.33233994245529175,
+        "similarity_matrix": [
+          [
+            0.34613722562789917,
+            0.24400314688682556
+          ],
+          [
+            0.28831174969673157,
+            0.33233994245529175
+          ]
+        ],
+        "minimum_prompt_margin": 0.04402819275856018
+      },
+      "balance_updates": 10,
+      "projected_steps": 0,
+      "component_updates": 0,
+      "image_file": "hulk-loki-jigsaw-baseline.png"
+    },
+    {
+      "case_id": "hulk-loki-jigsaw",
+      "feature": "cross_negative",
+      "steps": 30,
+      "guidance": 3,
+      "shift": 8,
+      "solver_order": 2,
+      "mode": "standard",
+      "quality_method": "adaptive",
+      "reduction": "mean",
+      "seed": 161,
+      "view_seed": 161,
+      "seconds": 595.1293805995956,
+      "peak_allocated_gib": 6.980529308319092,
+      "experiments": {
+        "contrastive": false,
+        "cross_negative": "qwen",
+        "cross_strength": 0.5,
+        "component_guidance": false,
+        "guidance_schedule": "constant",
+        "guidance_low": 0.1,
+        "guidance_high": 0.9,
+        "guidance_ramp": 0.05,
+        "conflict_projection": false,
+        "conflict_strength": 0.5,
+        "freeze_below": 0.0
+      },
+      "image_sha256": "aab6c51a6764dd28f5edc6aa39e015b4c64ed6fd2bd352f304f570766628d4f4",
+      "diagnostics": {
+        "options": {
+          "contrastive": false,
+          "cross_negative": "qwen",
+          "cross_strength": 0.5,
+          "component_guidance": false,
+          "guidance_schedule": "constant",
+          "guidance_low": 0.1,
+          "guidance_high": 0.9,
+          "guidance_ramp": 0.05,
+          "conflict_projection": false,
+          "conflict_strength": 0.5,
+          "freeze_below": 0.0
+        },
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "guidance_scale": 3,
+            "conflict": null
+          }
+        ]
+      },
+      "balancing": {
+        "method": "adaptive",
+        "scorer": {
+          "model": "openai/clip-vit-base-patch32",
+          "revision": "3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268",
+          "device": "cpu"
+        },
+        "interval": 2,
+        "temperature": 10.0,
+        "desired_weight_bounds": [
+          0.25,
+          0.75
+        ],
+        "smoothing": 0.5,
+        "contrastive": false,
+        "freeze_below": 0.0,
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "scores": [
+              0.373835951089859,
+              0.35500115156173706
+            ],
+            "weights": [
+              0.4765259027481079,
+              0.5234740972518921
+            ]
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "scores": null,
+            "weights": [
+              0.4765259027481079,
+              0.5234740972518921
+            ]
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "scores": [
+              0.3763900399208069,
+              0.36162468791007996
+            ],
+            "weights": [
+              0.46983975172042847,
+              0.5301602482795715
+            ]
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "scores": null,
+            "weights": [
+              0.46983975172042847,
+              0.5301602482795715
+            ]
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "scores": [
+              0.39177700877189636,
+              0.3765735626220703
+            ],
+            "weights": [
+              0.4659520983695984,
+              0.5340479016304016
+            ]
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "scores": null,
+            "weights": [
+              0.4659520983695984,
+              0.5340479016304016
+            ]
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "scores": [
+              0.40163689851760864,
+              0.3899568021297455
+            ],
+            "weights": [
+              0.468392550945282,
+              0.5316075086593628
+            ]
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "scores": null,
+            "weights": [
+              0.468392550945282,
+              0.5316075086593628
+            ]
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "scores": [
+              0.4098427891731262,
+              0.4051947593688965
+            ],
+            "weights": [
+              0.4783872961997986,
+              0.5216127634048462
+            ]
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "scores": null,
+            "weights": [
+              0.4783872961997986,
+              0.5216127634048462
+            ]
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "scores": [
+              0.4270753264427185,
+              0.3993273973464966
+            ],
+            "weights": [
+              0.4547295868396759,
+              0.5452704429626465
+            ]
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "scores": null,
+            "weights": [
+              0.4547295868396759,
+              0.5452704429626465
+            ]
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "scores": [
+              0.43383097648620605,
+              0.3968355655670166
+            ],
+            "weights": [
+              0.4316408634185791,
+              0.5683591365814209
+            ]
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "scores": null,
+            "weights": [
+              0.4316408634185791,
+              0.5683591365814209
+            ]
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "scores": [
+              0.41964417695999146,
+              0.3901721239089966
+            ],
+            "weights": [
+              0.4292447566986084,
+              0.5707552433013916
+            ]
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "scores": null,
+            "weights": [
+              0.4292447566986084,
+              0.5707552433013916
+            ]
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "scores": [
+              0.4099428355693817,
+              0.38928985595703125
+            ],
+            "weights": [
+              0.4388975501060486,
+              0.5611024498939514
+            ]
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "scores": null,
+            "weights": [
+              0.4388975501060486,
+              0.5611024498939514
+            ]
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "scores": [
+              0.39661869406700134,
+              0.392096608877182
+            ],
+            "weights": [
+              0.4637971520423889,
+              0.5362029075622559
+            ]
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "scores": null,
+            "weights": [
+              0.4637971520423889,
+              0.5362029075622559
+            ]
+          }
+        ]
+      },
+      "negative_plan": {
+        "mode": "qwen",
+        "subjects": [
+          "the Hulk",
+          "Loki"
+        ],
+        "view_negative_prompts": [
+          "Loki",
+          "the Hulk"
+        ],
+        "llm_response": "{\"subjects\":[\"the Hulk\",\"Loki\"]}"
+      },
+      "evaluation": {
+        "model": "openai/clip-vit-large-patch14",
+        "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+        "prompts": [
+          "a colorful mosaic portrait of the Hulk, an angry green face with black hair",
+          "a colorful mosaic portrait of Loki wearing a golden horned helmet"
+        ],
+        "image_sha256": "aab6c51a6764dd28f5edc6aa39e015b4c64ed6fd2bd352f304f570766628d4f4",
+        "scores": [
+          0.3392086625099182,
+          0.35337913036346436
+        ],
+        "weaker_view": 0.3392086625099182,
+        "similarity_matrix": [
+          [
+            0.3392086625099182,
+            0.2541065216064453
+          ],
+          [
+            0.2774803042411804,
+            0.35337913036346436
+          ]
+        ],
+        "minimum_prompt_margin": 0.07589882612228394
+      },
+      "balance_updates": 10,
+      "projected_steps": 0,
+      "component_updates": 0,
+      "image_file": "hulk-loki-jigsaw-cross_negative.png"
+    },
+    {
+      "case_id": "hulk-loki-jigsaw",
+      "feature": "conflict",
+      "steps": 30,
+      "guidance": 3,
+      "shift": 8,
+      "solver_order": 2,
+      "mode": "standard",
+      "quality_method": "adaptive",
+      "reduction": "mean",
+      "seed": 161,
+      "view_seed": 161,
+      "seconds": 393.5074773002416,
+      "peak_allocated_gib": 6.945573329925537,
+      "experiments": {
+        "contrastive": false,
+        "cross_negative": "off",
+        "cross_strength": 0.5,
+        "component_guidance": false,
+        "guidance_schedule": "constant",
+        "guidance_low": 0.1,
+        "guidance_high": 0.9,
+        "guidance_ramp": 0.05,
+        "conflict_projection": true,
+        "conflict_strength": 0.5,
+        "freeze_below": 0.0
+      },
+      "image_sha256": "a3bac0eae0d8020828816c30c6857ac14279cc01f28952465dd3c197a385e5e3",
+      "diagnostics": {
+        "options": {
+          "contrastive": false,
+          "cross_negative": "off",
+          "cross_strength": 0.5,
+          "component_guidance": false,
+          "guidance_schedule": "constant",
+          "guidance_low": 0.1,
+          "guidance_high": 0.9,
+          "guidance_ramp": 0.05,
+          "conflict_projection": true,
+          "conflict_strength": 0.5,
+          "freeze_below": 0.0
+        },
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "guidance_scale": 3,
+            "conflict": null
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.11146903783082962,
+              "projected": true
+            }
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.11200730502605438,
+              "projected": true
+            }
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.11130613833665848,
+              "projected": true
+            }
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.11097823828458786,
+              "projected": true
+            }
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.11205478012561798,
+              "projected": true
+            }
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.12474094331264496,
+              "projected": true
+            }
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.11956101655960083,
+              "projected": true
+            }
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.1129898875951767,
+              "projected": true
+            }
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.09820357710123062,
+              "projected": true
+            }
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.07649313658475876,
+              "projected": true
+            }
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.043395549058914185,
+              "projected": true
+            }
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.01763077639043331,
+              "projected": true
+            }
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.019181028008461,
+              "projected": true
+            }
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.016733458265662193,
+              "projected": true
+            }
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.003990210127085447,
+              "projected": true
+            }
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": -0.0033914120867848396,
+              "projected": true
+            }
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": 0.009359131567180157,
+              "projected": false
+            }
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": 0.010913158766925335,
+              "projected": false
+            }
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": 0.01464193593710661,
+              "projected": false
+            }
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": 0.013191744685173035,
+              "projected": false
+            }
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "guidance_scale": 3,
+            "conflict": {
+              "cosine": 0.015804117545485497,
+              "projected": false
+            }
+          }
+        ]
+      },
+      "balancing": {
+        "method": "adaptive",
+        "scorer": {
+          "model": "openai/clip-vit-base-patch32",
+          "revision": "3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268",
+          "device": "cpu"
+        },
+        "interval": 2,
+        "temperature": 10.0,
+        "desired_weight_bounds": [
+          0.25,
+          0.75
+        ],
+        "smoothing": 0.5,
+        "contrastive": false,
+        "freeze_below": 0.0,
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "scores": null,
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "scores": [
+              0.3575993478298187,
+              0.34633558988571167
+            ],
+            "weights": [
+              0.48593518137931824,
+              0.5140647888183594
+            ]
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "scores": null,
+            "weights": [
+              0.48593518137931824,
+              0.5140647888183594
+            ]
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "scores": [
+              0.3654988408088684,
+              0.34625011682510376
+            ],
+            "weights": [
+              0.46898069977760315,
+              0.5310192704200745
+            ]
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "scores": null,
+            "weights": [
+              0.46898069977760315,
+              0.5310192704200745
+            ]
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "scores": [
+              0.38004010915756226,
+              0.3568030893802643
+            ],
+            "weights": [
+              0.45557403564453125,
+              0.5444259643554688
+            ]
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "scores": null,
+            "weights": [
+              0.45557403564453125,
+              0.5444259643554688
+            ]
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "scores": [
+              0.38572269678115845,
+              0.3763943016529083
+            ],
+            "weights": [
+              0.4661349654197693,
+              0.5338649749755859
+            ]
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "scores": null,
+            "weights": [
+              0.4661349654197693,
+              0.5338649749755859
+            ]
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "scores": [
+              0.4073752164840698,
+              0.3899616599082947
+            ],
+            "weights": [
+              0.4613553583621979,
+              0.5386446118354797
+            ]
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "scores": null,
+            "weights": [
+              0.4613553583621979,
+              0.5386446118354797
+            ]
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "scores": [
+              0.4143102765083313,
+              0.40298527479171753
+            ],
+            "weights": [
+              0.46653658151626587,
+              0.5334634184837341
+            ]
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "scores": null,
+            "weights": [
+              0.46653658151626587,
+              0.5334634184837341
+            ]
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "scores": [
+              0.419049471616745,
+              0.4104028642177582
+            ],
+            "weights": [
+              0.4724667966365814,
+              0.5275331735610962
+            ]
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "scores": null,
+            "weights": [
+              0.4724667966365814,
+              0.5275331735610962
+            ]
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "scores": [
+              0.42013493180274963,
+              0.40790003538131714
+            ],
+            "weights": [
+              0.4709588587284088,
+              0.5290411710739136
+            ]
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "scores": null,
+            "weights": [
+              0.4709588587284088,
+              0.5290411710739136
+            ]
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "scores": [
+              0.4192676246166229,
+              0.40870919823646545
+            ],
+            "weights": [
+              0.4722936749458313,
+              0.5277063846588135
+            ]
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "scores": null,
+            "weights": [
+              0.4722936749458313,
+              0.5277063846588135
+            ]
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "scores": [
+              0.4212203323841095,
+              0.4078654944896698
+            ],
+            "weights": [
+              0.4694780111312866,
+              0.5305219888687134
+            ]
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "scores": null,
+            "weights": [
+              0.4694780111312866,
+              0.5305219888687134
+            ]
+          }
+        ]
+      },
+      "negative_plan": null,
+      "evaluation": {
+        "model": "openai/clip-vit-large-patch14",
+        "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+        "prompts": [
+          "a colorful mosaic portrait of the Hulk, an angry green face with black hair",
+          "a colorful mosaic portrait of Loki wearing a golden horned helmet"
+        ],
+        "image_sha256": "a3bac0eae0d8020828816c30c6857ac14279cc01f28952465dd3c197a385e5e3",
+        "scores": [
+          0.3480915427207947,
+          0.33056360483169556
+        ],
+        "weaker_view": 0.33056360483169556,
+        "similarity_matrix": [
+          [
+            0.3480915427207947,
+            0.245069682598114
+          ],
+          [
+            0.2878006100654602,
+            0.33056360483169556
+          ]
+        ],
+        "minimum_prompt_margin": 0.04276299476623535
+      },
+      "balance_updates": 10,
+      "projected_steps": 16,
+      "component_updates": 0,
+      "image_file": "hulk-loki-jigsaw-conflict.png"
+    },
+    {
+      "case_id": "vader-castle-hybrid",
+      "mode": "standard",
+      "steps": 30,
+      "guidance": 3,
+      "shift": 8,
+      "quality_method": "plain",
+      "reduction": "sum",
+      "seed": 131,
+      "view_seed": 131,
+      "negative_prompt": "",
+      "seconds": 549.9818141004071,
+      "peak_allocated_gib": 6.922624588012695,
+      "image_sha256": "7f70484ae9d36fa0e01f025f0b92b252232d0a9a97ae0b90ef00ff006287d013",
+      "diagnostics": null,
+      "feature": "baseline",
+      "experiments": {
+        "contrastive": false,
+        "cross_negative": "off",
+        "cross_strength": 0.5,
+        "component_guidance": false,
+        "guidance_schedule": "constant",
+        "guidance_low": 0.1,
+        "guidance_high": 0.9,
+        "guidance_ramp": 0.05,
+        "conflict_projection": false,
+        "conflict_strength": 0.5,
+        "freeze_below": 0.0
+      },
+      "reused_from": "results/showcase_v3_candidates_20261025/vader-castle-hybrid/0131",
+      "evaluation": {
+        "model": "openai/clip-vit-large-patch14",
+        "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+        "prompts": [
+          "a high contrast monochrome gothic engraving of Darth Vader's helmet, a large centered symmetrical face",
+          "a high contrast monochrome gothic engraving of a haunted castle with many pointed towers and intricate windows"
+        ],
+        "image_sha256": "7f70484ae9d36fa0e01f025f0b92b252232d0a9a97ae0b90ef00ff006287d013",
+        "scores": [
+          0.2035163789987564,
+          0.3084779381752014
+        ],
+        "weaker_view": 0.2035163789987564,
+        "similarity_matrix": [
+          [
+            0.2035163789987564,
+            0.1462777853012085
+          ],
+          [
+            0.21209414303302765,
+            0.3084779381752014
+          ]
+        ],
+        "minimum_prompt_margin": 0.05723859369754791
+      },
+      "balance_updates": 0,
+      "projected_steps": 0,
+      "component_updates": 0,
+      "image_file": "vader-castle-hybrid-baseline.png"
+    },
+    {
+      "case_id": "vader-castle-hybrid",
+      "feature": "component",
+      "steps": 30,
+      "guidance": 3,
+      "shift": 8,
+      "solver_order": 2,
+      "mode": "standard",
+      "quality_method": "plain",
+      "reduction": "sum",
+      "seed": 131,
+      "view_seed": 131,
+      "seconds": 442.03633390087634,
+      "peak_allocated_gib": 6.896624565124512,
+      "experiments": {
+        "contrastive": false,
+        "cross_negative": "off",
+        "cross_strength": 0.5,
+        "component_guidance": true,
+        "guidance_schedule": "constant",
+        "guidance_low": 0.1,
+        "guidance_high": 0.9,
+        "guidance_ramp": 0.05,
+        "conflict_projection": false,
+        "conflict_strength": 0.5,
+        "freeze_below": 0.0
+      },
+      "image_sha256": "629d2c88edb4e91ddff94634540d95c78038c675861b77cb1411d3b9b44acee2",
+      "diagnostics": {
+        "options": {
+          "contrastive": false,
+          "cross_negative": "off",
+          "cross_strength": 0.5,
+          "component_guidance": true,
+          "guidance_schedule": "constant",
+          "guidance_low": 0.1,
+          "guidance_high": 0.9,
+          "guidance_ramp": 0.05,
+          "conflict_projection": false,
+          "conflict_strength": 0.5,
+          "freeze_below": 0.0
+        },
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 0,
+              "time": 0.9998748779296875,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 1,
+              "time": 0.995579833984375,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 2,
+              "time": 0.9910187377929688,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 3,
+              "time": 0.9861661376953125,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 4,
+              "time": 0.9809931030273438,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 5,
+              "time": 0.9754668579101563,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 6,
+              "time": 0.9695499267578125,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 7,
+              "time": 0.9631993408203126,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 8,
+              "time": 0.9563656616210937,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 9,
+              "time": 0.9489915161132813,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.4450807571411133,
+              2.554919481277466
+            ],
+            "component_balance": {
+              "step": 10,
+              "time": 0.94101025390625,
+              "scores": [
+                0.24979151785373688,
+                0.34550127387046814
+              ],
+              "guidance_gains": [
+                1.2225403785705566,
+                0.7774597406387329
+              ]
+            }
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.4450807571411133,
+              2.554919481277466
+            ],
+            "component_balance": {
+              "step": 11,
+              "time": 0.9323435668945312,
+              "scores": null,
+              "guidance_gains": [
+                1.2225403785705566,
+                0.7774597406387329
+              ]
+            }
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.6890292167663574,
+              2.3109710216522217
+            ],
+            "component_balance": {
+              "step": 12,
+              "time": 0.9228992919921875,
+              "scores": [
+                0.2377864420413971,
+                0.3389010429382324
+              ],
+              "guidance_gains": [
+                1.3445146083831787,
+                0.6554855108261108
+              ]
+            }
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.6890292167663574,
+              2.3109710216522217
+            ],
+            "component_balance": {
+              "step": 13,
+              "time": 0.9125677490234375,
+              "scores": null,
+              "guidance_gains": [
+                1.3445146083831787,
+                0.6554855108261108
+              ]
+            }
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.826096534729004,
+              2.1739038228988647
+            ],
+            "component_balance": {
+              "step": 14,
+              "time": 0.9012178344726562,
+              "scores": [
+                0.23427501320838928,
+                0.3392833173274994
+              ],
+              "guidance_gains": [
+                1.413048267364502,
+                0.5869519114494324
+              ]
+            }
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.826096534729004,
+              2.1739038228988647
+            ],
+            "component_balance": {
+              "step": 15,
+              "time": 0.8886912231445312,
+              "scores": null,
+              "guidance_gains": [
+                1.413048267364502,
+                0.5869519114494324
+              ]
+            }
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.913048267364502,
+              2.086951971054077
+            ],
+            "component_balance": {
+              "step": 16,
+              "time": 0.8747947387695313,
+              "scores": [
+                0.22839730978012085,
+                0.34195318818092346
+              ],
+              "guidance_gains": [
+                1.456524133682251,
+                0.5434759855270386
+              ]
+            }
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.913048267364502,
+              2.086951971054077
+            ],
+            "component_balance": {
+              "step": 17,
+              "time": 0.8592908935546875,
+              "scores": null,
+              "guidance_gains": [
+                1.456524133682251,
+                0.5434759855270386
+              ]
+            }
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.956524133682251,
+              2.0434759855270386
+            ],
+            "component_balance": {
+              "step": 18,
+              "time": 0.8418834838867187,
+              "scores": [
+                0.22918254137039185,
+                0.34567034244537354
+              ],
+              "guidance_gains": [
+                1.4782620668411255,
+                0.5217379927635193
+              ]
+            }
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.956524133682251,
+              2.0434759855270386
+            ],
+            "component_balance": {
+              "step": 19,
+              "time": 0.8221991577148438,
+              "scores": null,
+              "guidance_gains": [
+                1.4782620668411255,
+                0.5217379927635193
+              ]
+            }
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.978261947631836,
+              2.021738052368164
+            ],
+            "component_balance": {
+              "step": 20,
+              "time": 0.7997598266601562,
+              "scores": [
+                0.22610415518283844,
+                0.34834402799606323
+              ],
+              "guidance_gains": [
+                1.489130973815918,
+                0.510869026184082
+              ]
+            }
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.978261947631836,
+              2.021738052368164
+            ],
+            "component_balance": {
+              "step": 21,
+              "time": 0.7739436645507812,
+              "scores": null,
+              "guidance_gains": [
+                1.489130973815918,
+                0.510869026184082
+              ]
+            }
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.989130973815918,
+              2.010869026184082
+            ],
+            "component_balance": {
+              "step": 22,
+              "time": 0.74392626953125,
+              "scores": [
+                0.2283754050731659,
+                0.3503761887550354
+              ],
+              "guidance_gains": [
+                1.494565486907959,
+                0.505434513092041
+              ]
+            }
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.989130973815918,
+              2.010869026184082
+            ],
+            "component_balance": {
+              "step": 23,
+              "time": 0.7085914306640625,
+              "scores": null,
+              "guidance_gains": [
+                1.494565486907959,
+                0.505434513092041
+              ]
+            }
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.994565486907959,
+              2.005434513092041
+            ],
+            "component_balance": {
+              "step": 24,
+              "time": 0.6663887329101562,
+              "scores": [
+                0.22556383907794952,
+                0.3504672050476074
+              ],
+              "guidance_gains": [
+                1.4972827434539795,
+                0.5027172565460205
+              ]
+            }
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.994565486907959,
+              2.005434513092041
+            ],
+            "component_balance": {
+              "step": 25,
+              "time": 0.6151004638671875,
+              "scores": null,
+              "guidance_gains": [
+                1.4972827434539795,
+                0.5027172565460205
+              ]
+            }
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.9972827434539795,
+              2.0027172565460205
+            ],
+            "component_balance": {
+              "step": 26,
+              "time": 0.5514385986328125,
+              "scores": [
+                0.22820791602134705,
+                0.35245275497436523
+              ],
+              "guidance_gains": [
+                1.4986413717269897,
+                0.5013586282730103
+              ]
+            }
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.9972827434539795,
+              2.0027172565460205
+            ],
+            "component_balance": {
+              "step": 27,
+              "time": 0.4703113098144531,
+              "scores": null,
+              "guidance_gains": [
+                1.4986413717269897,
+                0.5013586282730103
+              ]
+            }
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.9986414909362793,
+              2.0013586282730103
+            ],
+            "component_balance": {
+              "step": 28,
+              "time": 0.3633883361816406,
+              "scores": [
+                0.2263403832912445,
+                0.35374316573143005
+              ],
+              "guidance_gains": [
+                1.4993207454681396,
+                0.5006793141365051
+              ]
+            }
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.9986414909362793,
+              2.0013586282730103
+            ],
+            "component_balance": {
+              "step": 29,
+              "time": 0.21604087829589844,
+              "scores": null,
+              "guidance_gains": [
+                1.4993207454681396,
+                0.5006793141365051
+              ]
+            }
+          }
+        ]
+      },
+      "balancing": null,
+      "negative_plan": null,
+      "evaluation": {
+        "model": "openai/clip-vit-large-patch14",
+        "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+        "prompts": [
+          "a high contrast monochrome gothic engraving of Darth Vader's helmet, a large centered symmetrical face",
+          "a high contrast monochrome gothic engraving of a haunted castle with many pointed towers and intricate windows"
+        ],
+        "image_sha256": "629d2c88edb4e91ddff94634540d95c78038c675861b77cb1411d3b9b44acee2",
+        "scores": [
+          0.23158659040927887,
+          0.31103789806365967
+        ],
+        "weaker_view": 0.23158659040927887,
+        "similarity_matrix": [
+          [
+            0.23158659040927887,
+            0.14619600772857666
+          ],
+          [
+            0.20137488842010498,
+            0.31103789806365967
+          ]
+        ],
+        "minimum_prompt_margin": 0.08539058268070221
+      },
+      "balance_updates": 0,
+      "projected_steps": 0,
+      "component_updates": 10,
+      "image_file": "vader-castle-hybrid-component.png"
+    },
+    {
+      "case_id": "terminator-rose",
+      "mode": "standard",
+      "steps": 30,
+      "guidance": 3,
+      "shift": 8,
+      "quality_method": "plain",
+      "reduction": "sum",
+      "seed": 141,
+      "view_seed": 141,
+      "negative_prompt": "",
+      "seconds": 395.7708989996463,
+      "peak_allocated_gib": 6.922624588012695,
+      "image_sha256": "27b38c6128bfdb516f25f7ea9c0cf0bb5f4806357ca0e23bbeb8bebc05203008",
+      "diagnostics": null,
+      "feature": "baseline",
+      "experiments": {
+        "contrastive": false,
+        "cross_negative": "off",
+        "cross_strength": 0.5,
+        "component_guidance": false,
+        "guidance_schedule": "constant",
+        "guidance_low": 0.1,
+        "guidance_high": 0.9,
+        "guidance_ramp": 0.05,
+        "conflict_projection": false,
+        "conflict_strength": 0.5,
+        "freeze_below": 0.0
+      },
+      "reused_from": "results/showcase_v3_candidates_20261025/terminator-rose/0141",
+      "evaluation": {
+        "model": "openai/clip-vit-large-patch14",
+        "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+        "prompts": [
+          "a detailed surreal oil painting of the Terminator's chrome robotic skull, a large centered face",
+          "a detailed surreal oil painting of a blooming red rose with vivid green leaves"
+        ],
+        "image_sha256": "27b38c6128bfdb516f25f7ea9c0cf0bb5f4806357ca0e23bbeb8bebc05203008",
+        "scores": [
+          0.28913769125938416,
+          0.28074294328689575
+        ],
+        "weaker_view": 0.28074294328689575,
+        "similarity_matrix": [
+          [
+            0.28913769125938416,
+            0.10156146436929703
+          ],
+          [
+            0.3364463448524475,
+            0.28074294328689575
+          ]
+        ],
+        "minimum_prompt_margin": -0.05570340156555176
+      },
+      "balance_updates": 0,
+      "projected_steps": 0,
+      "component_updates": 0,
+      "image_file": "terminator-rose-baseline.png"
+    },
+    {
+      "case_id": "terminator-rose",
+      "feature": "component",
+      "steps": 30,
+      "guidance": 3,
+      "shift": 8,
+      "solver_order": 2,
+      "mode": "standard",
+      "quality_method": "plain",
+      "reduction": "sum",
+      "seed": 141,
+      "view_seed": 141,
+      "seconds": 296.54810580052435,
+      "peak_allocated_gib": 6.896624565124512,
+      "experiments": {
+        "contrastive": false,
+        "cross_negative": "off",
+        "cross_strength": 0.5,
+        "component_guidance": true,
+        "guidance_schedule": "constant",
+        "guidance_low": 0.1,
+        "guidance_high": 0.9,
+        "guidance_ramp": 0.05,
+        "conflict_projection": false,
+        "conflict_strength": 0.5,
+        "freeze_below": 0.0
+      },
+      "image_sha256": "9e92c3e660c818de82084e32e856f7cafd67ccec2f8e8d20093240e5e7947b55",
+      "diagnostics": {
+        "options": {
+          "contrastive": false,
+          "cross_negative": "off",
+          "cross_strength": 0.5,
+          "component_guidance": true,
+          "guidance_schedule": "constant",
+          "guidance_low": 0.1,
+          "guidance_high": 0.9,
+          "guidance_ramp": 0.05,
+          "conflict_projection": false,
+          "conflict_strength": 0.5,
+          "freeze_below": 0.0
+        },
+        "steps": [
+          {
+            "step": 0,
+            "time": 0.9998748779296875,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 0,
+              "time": 0.9998748779296875,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 1,
+            "time": 0.995579833984375,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 1,
+              "time": 0.995579833984375,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 2,
+            "time": 0.9910187377929688,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 2,
+              "time": 0.9910187377929688,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 3,
+            "time": 0.9861661376953125,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 3,
+              "time": 0.9861661376953125,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 4,
+            "time": 0.9809931030273438,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 4,
+              "time": 0.9809931030273438,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 5,
+            "time": 0.9754668579101563,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 5,
+              "time": 0.9754668579101563,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 6,
+            "time": 0.9695499267578125,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 6,
+              "time": 0.9695499267578125,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 7,
+            "time": 0.9631993408203126,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 7,
+              "time": 0.9631993408203126,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 8,
+            "time": 0.9563656616210937,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 8,
+              "time": 0.9563656616210937,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 9,
+            "time": 0.9489915161132813,
+            "guidance_scale": 3,
+            "component_scales": [
+              3.0,
+              3.0
+            ],
+            "component_balance": {
+              "step": 9,
+              "time": 0.9489915161132813,
+              "scores": null,
+              "guidance_gains": [
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "step": 10,
+            "time": 0.94101025390625,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.6907808780670166,
+              3.3092193603515625
+            ],
+            "component_balance": {
+              "step": 10,
+              "time": 0.94101025390625,
+              "scores": [
+                0.2980966567993164,
+                0.23416027426719666
+              ],
+              "guidance_gains": [
+                0.8453904390335083,
+                1.1546096801757812
+              ]
+            }
+          },
+          {
+            "step": 11,
+            "time": 0.9323435668945312,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.6907808780670166,
+              3.3092193603515625
+            ],
+            "component_balance": {
+              "step": 11,
+              "time": 0.9323435668945312,
+              "scores": null,
+              "guidance_gains": [
+                0.8453904390335083,
+                1.1546096801757812
+              ]
+            }
+          },
+          {
+            "step": 12,
+            "time": 0.9228992919921875,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.541234254837036,
+              3.458765983581543
+            ],
+            "component_balance": {
+              "step": 12,
+              "time": 0.9228992919921875,
+              "scores": [
+                0.3090232312679291,
+                0.24620461463928223
+              ],
+              "guidance_gains": [
+                0.7706171274185181,
+                1.2293829917907715
+              ]
+            }
+          },
+          {
+            "step": 13,
+            "time": 0.9125677490234375,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.541234254837036,
+              3.458765983581543
+            ],
+            "component_balance": {
+              "step": 13,
+              "time": 0.9125677490234375,
+              "scores": null,
+              "guidance_gains": [
+                0.7706171274185181,
+                1.2293829917907715
+              ]
+            }
+          },
+          {
+            "step": 14,
+            "time": 0.9012178344726562,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.4827098846435547,
+              3.5172903537750244
+            ],
+            "component_balance": {
+              "step": 14,
+              "time": 0.9012178344726562,
+              "scores": [
+                0.31443488597869873,
+                0.255178302526474
+              ],
+              "guidance_gains": [
+                0.7413549423217773,
+                1.2586451768875122
+              ]
+            }
+          },
+          {
+            "step": 15,
+            "time": 0.8886912231445312,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.4827098846435547,
+              3.5172903537750244
+            ],
+            "component_balance": {
+              "step": 15,
+              "time": 0.8886912231445312,
+              "scores": null,
+              "guidance_gains": [
+                0.7413549423217773,
+                1.2586451768875122
+              ]
+            }
+          },
+          {
+            "step": 16,
+            "time": 0.8747947387695313,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.415936231613159,
+              3.58406400680542
+            ],
+            "component_balance": {
+              "step": 16,
+              "time": 0.8747947387695313,
+              "scores": [
+                0.3202083706855774,
+                0.25266918540000916
+              ],
+              "guidance_gains": [
+                0.7079681158065796,
+                1.29203200340271
+              ]
+            }
+          },
+          {
+            "step": 17,
+            "time": 0.8592908935546875,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.415936231613159,
+              3.58406400680542
+            ],
+            "component_balance": {
+              "step": 17,
+              "time": 0.8592908935546875,
+              "scores": null,
+              "guidance_gains": [
+                0.7079681158065796,
+                1.29203200340271
+              ]
+            }
+          },
+          {
+            "step": 18,
+            "time": 0.8418834838867187,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.3960657119750977,
+              3.6039342880249023
+            ],
+            "component_balance": {
+              "step": 18,
+              "time": 0.8418834838867187,
+              "scores": [
+                0.32183390855789185,
+                0.2573035955429077
+              ],
+              "guidance_gains": [
+                0.6980328559875488,
+                1.3019671440124512
+              ]
+            }
+          },
+          {
+            "step": 19,
+            "time": 0.8221991577148438,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.3960657119750977,
+              3.6039342880249023
+            ],
+            "component_balance": {
+              "step": 19,
+              "time": 0.8221991577148438,
+              "scores": null,
+              "guidance_gains": [
+                0.6980328559875488,
+                1.3019671440124512
+              ]
+            }
+          },
+          {
+            "step": 20,
+            "time": 0.7997598266601562,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.3621103763580322,
+              3.637889862060547
+            ],
+            "component_balance": {
+              "step": 20,
+              "time": 0.7997598266601562,
+              "scores": [
+                0.3266546428203583,
+                0.2567567825317383
+              ],
+              "guidance_gains": [
+                0.6810551881790161,
+                1.3189449310302734
+              ]
+            }
+          },
+          {
+            "step": 21,
+            "time": 0.7739436645507812,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.3621103763580322,
+              3.637889862060547
+            ],
+            "component_balance": {
+              "step": 21,
+              "time": 0.7739436645507812,
+              "scores": null,
+              "guidance_gains": [
+                0.6810551881790161,
+                1.3189449310302734
+              ]
+            }
+          },
+          {
+            "step": 22,
+            "time": 0.74392626953125,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.3515379428863525,
+              3.6484622955322266
+            ],
+            "component_balance": {
+              "step": 22,
+              "time": 0.74392626953125,
+              "scores": [
+                0.3336305618286133,
+                0.2651732563972473
+              ],
+              "guidance_gains": [
+                0.6757689714431763,
+                1.3242311477661133
+              ]
+            }
+          },
+          {
+            "step": 23,
+            "time": 0.7085914306640625,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.3515379428863525,
+              3.6484622955322266
+            ],
+            "component_balance": {
+              "step": 23,
+              "time": 0.7085914306640625,
+              "scores": null,
+              "guidance_gains": [
+                0.6757689714431763,
+                1.3242311477661133
+              ]
+            }
+          },
+          {
+            "step": 24,
+            "time": 0.6663887329101562,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.3354908227920532,
+              3.6645092964172363
+            ],
+            "component_balance": {
+              "step": 24,
+              "time": 0.6663887329101562,
+              "scores": [
+                0.3389666676521301,
+                0.268085241317749
+              ],
+              "guidance_gains": [
+                0.6677454113960266,
+                1.3322546482086182
+              ]
+            }
+          },
+          {
+            "step": 25,
+            "time": 0.6151004638671875,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.3354908227920532,
+              3.6645092964172363
+            ],
+            "component_balance": {
+              "step": 25,
+              "time": 0.6151004638671875,
+              "scores": null,
+              "guidance_gains": [
+                0.6677454113960266,
+                1.3322546482086182
+              ]
+            }
+          },
+          {
+            "step": 26,
+            "time": 0.5514385986328125,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.2927215099334717,
+              3.7072784900665283
+            ],
+            "component_balance": {
+              "step": 26,
+              "time": 0.5514385986328125,
+              "scores": [
+                0.34598252177238464,
+                0.2671312391757965
+              ],
+              "guidance_gains": [
+                0.6463607549667358,
+                1.3536392450332642
+              ]
+            }
+          },
+          {
+            "step": 27,
+            "time": 0.4703113098144531,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.2927215099334717,
+              3.7072784900665283
+            ],
+            "component_balance": {
+              "step": 27,
+              "time": 0.4703113098144531,
+              "scores": null,
+              "guidance_gains": [
+                0.6463607549667358,
+                1.3536392450332642
+              ]
+            }
+          },
+          {
+            "step": 28,
+            "time": 0.3633883361816406,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.2394180297851562,
+              3.7605819702148438
+            ],
+            "component_balance": {
+              "step": 28,
+              "time": 0.3633883361816406,
+              "scores": [
+                0.352943480014801,
+                0.26655513048171997
+              ],
+              "guidance_gains": [
+                0.6197090148925781,
+                1.3802909851074219
+              ]
+            }
+          },
+          {
+            "step": 29,
+            "time": 0.21604087829589844,
+            "guidance_scale": 3,
+            "component_scales": [
+              2.2394180297851562,
+              3.7605819702148438
+            ],
+            "component_balance": {
+              "step": 29,
+              "time": 0.21604087829589844,
+              "scores": null,
+              "guidance_gains": [
+                0.6197090148925781,
+                1.3802909851074219
+              ]
+            }
+          }
+        ]
+      },
+      "balancing": null,
+      "negative_plan": null,
+      "evaluation": {
+        "model": "openai/clip-vit-large-patch14",
+        "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+        "prompts": [
+          "a detailed surreal oil painting of the Terminator's chrome robotic skull, a large centered face",
+          "a detailed surreal oil painting of a blooming red rose with vivid green leaves"
+        ],
+        "image_sha256": "9e92c3e660c818de82084e32e856f7cafd67ccec2f8e8d20093240e5e7947b55",
+        "scores": [
+          0.2950139343738556,
+          0.2815089821815491
+        ],
+        "weaker_view": 0.2815089821815491,
+        "similarity_matrix": [
+          [
+            0.2950139343738556,
+            0.10123284161090851
+          ],
+          [
+            0.33417224884033203,
+            0.2815089821815491
+          ]
+        ],
+        "minimum_prompt_margin": -0.05266326665878296
+      },
+      "balance_updates": 0,
+      "projected_steps": 0,
+      "component_updates": 10,
+      "image_file": "terminator-rose-component.png"
+    }
+  ]
+}

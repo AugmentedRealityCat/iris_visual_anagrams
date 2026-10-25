@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "date": "2026-10-26",
+  "new_images": 9,
+  "reused_baselines": 4,
+  "resolution": [
+    1024,
+    1024
+  ],
+  "steps": 30,
+  "no_new_rotations": true,
+  "verified_core_source_hashes": {
+    "visual_anagrams/iris.py": "4a671a71734b6ee258779679b53e73b1e7f1c31c2019a2a890be1f0cc0a5c1e5",
+    "visual_anagrams/balancing.py": "adc53924023585941bb894097ed019edb63307676d1831c0d7c9e1a2ea192912",
+    "visual_anagrams/quality_experiments.py": "ccfb8fc1267123ddb8a109db1d0a6196fb4d96d146a71abcc112b9eb4f96bd64",
+    "visual_anagrams/negative_planner.py": "16170b1e890c4ddd6a4abcf2d270ea5c73962681241f0a445bc07dec61258233"
+  },
+  "public_image_hashes_verified": 13,
+  "baseline_source_hashes_verified": 4,
+  "cli_gui_policy_and_explicit_override_checks": "passed",
+  "shared_style_presets": 29,
+  "tests_passed": 209,
+  "test_seconds": 22.37,
+  "default_policy_sha256": "63aa52e3dc63d2b0ffe322c6282195e8d05146613a6f55d03b25b868681b0f07"
+}

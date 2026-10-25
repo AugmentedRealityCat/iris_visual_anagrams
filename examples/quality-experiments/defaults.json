@@ -1,0 +1,23 @@
+{
+  "status": "complete",
+  "summary": "Standard paired geometric Auto/Mean views with Adaptive balancing now use Qwen cross negatives at strength 0.5. Component guidance is enabled for Standard low/high-frequency and grayscale/colour pairs with Classic Sum. The base profile remains Standard 30 steps, CFG 3, shift 8 and DPM order 2. Other new experiments remain off; Turbo and untested component groups keep their previous settings. Explicit user overrides always win.",
+  "base_profile": {"mode": "standard", "steps": 30, "guidance": 3, "shift": 8, "solver_order": 2},
+  "standard_geometric": {"quality_method": "adaptive", "cross_negative": "qwen", "cross_strength": 0.5},
+  "component_groups": [
+    {"views": ["low_pass", "high_pass"], "component_guidance": true},
+    {"views": ["grayscale", "color"], "component_guidance": true}
+  ],
+  "untested_component_groups_default": false,
+  "turbo_experiments_default": false,
+  "findings": [
+    "- Component guidance: both intended-view scores improved on the Vader/castle case (0.2035/0.3085 to 0.2316/0.3110). The blurred helmet is clearer and the detailed castle remains readable.",
+    "- Component guidance: Terminator/rose scores changed from 0.2891/0.2807 to 0.2950/0.2815. The rose-view gain is negligible; visual review found no material regression. Both component implementations use one shared reference prediction instead of two.",
+    "- Contrastive balancing: rejected for default promotion in this screen. Warp weaker-view alignment fell from 0.2804 to 0.2684 and minimum prompt margin worsened from -0.0245 to -0.0474; both views still favour Venom.",
+    "- Scheduled CFG: rejected at the tested interval. Warp weaker-view alignment fell to 0.2296, with visibly weaker Venom detail despite faster sampling.",
+    "- Balance freeze: leave disabled. Freeze below 0.6 suppressed the last two balancing updates but gave almost no perceptual difference and slightly lower weaker-view alignment (0.2794).",
+    "- Qwen cross negatives: promoted after both geometric cases improved weaker-view alignment and minimum prompt margin. Warp A/M changed from 0.2804/-0.0245 to 0.2937/-0.0103; jigsaw changed from 0.3323/+0.0440 to 0.3392/+0.0759. The warp still favours Venom in both views; the jigsaw still separates the faces spatially. These are modest recognition gains, not proof of a convincing illusion.",
+    "- Cross negatives at strength 0.5 cost six model forwards instead of four per guided step, approximately 50% more sampling work. They reuse the bundled Qwen encoder for planning, with no extra LLM weights. Invalid default/GUI planning logs and records a fallback to shared negatives; explicit CLI planning remains strict unless --negative_fallback is set.",
+    "- Conflict projection: leave disabled. Its warp improvement did not repeat on the jigsaw, where weaker-view alignment fell from 0.3323 to 0.3306 and margin from +0.0440 to +0.0428. Images were visually almost unchanged.",
+    "- This small pilot tests each option independently, one seed per case. Combinations were not benchmarked. New geometric defaults generalise from warp/jigsaw to paired Adaptive geometry; no new rotations were generated. Motion, triple-component and scale groups were not tested here."
+  ]
+}
