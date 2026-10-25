@@ -33,9 +33,7 @@ Mean with Adaptive balancing. [Gallery, prompts and settings](examples/showcase-
 
 [![Added methods](examples/showcase-v3/new-methods.jpg)](examples/showcase-v3/README.md)
 
-Earlier six-method showcase:
 
-[**Six-method character showcase: watch / download**](examples/showcase-v2/showcase3-small.mp4)
 
 ![New showcase: six transformations and themes](examples/showcase-v2/gallery.jpg)
 
