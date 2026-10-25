@@ -16,7 +16,10 @@ two geometric Auto/Mean views. Component groups and other view counts use Classi
 
 ## Example gallery and showcase
 
-https://github.com/user-attachments/assets/88020cdb-0cd1-42b6-b5cc-13d67ae80aea
+
+
+https://github.com/user-attachments/assets/9df6ccca-9f38-4c79-bff8-6671962fc4d6
+
 
 
 [Prompts, seeds and settings](examples/showcase/manifest.json)
