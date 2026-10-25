@@ -1,3 +1,5 @@
+
+
 ﻿# Visual Anagrams with Iris 3B INT8
 <img width="3823" height="2051" alt="GUI_VA" src="https://github.com/user-attachments/assets/2d48d687-4c98-4c5f-9bdb-da0e56285b3b" />
 
@@ -18,7 +20,10 @@ two geometric Auto/Mean views. Component groups and other view counts use Classi
 
 
 
-https://github.com/user-attachments/assets/9df6ccca-9f38-4c79-bff8-6671962fc4d6
+
+
+https://github.com/user-attachments/assets/0552699d-1ef9-4c51-8209-ec40024a22f8
+
 
 
 
