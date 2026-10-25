@@ -8,6 +8,7 @@ from pathlib import Path
 
 def build_parser():
     from visual_anagrams.export import add_export_args
+    from visual_anagrams.experiment_options import add_experiment_args
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
@@ -45,12 +46,13 @@ def build_parser():
     # Kept for existing command lines; Iris has only one generation stage.
     parser.add_argument("--generate_1024", action="store_true", help="Compatibility option; Iris already generates at 1024")
     parser.add_argument("--save_metadata", action="store_true", help="Compatibility option; metadata is always saved")
-    return add_export_args(parser)
+    return add_export_args(add_experiment_args(parser))
 
 
 def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
+    automatic_negative_default=args.cross_negative is None
     args.num_inference_steps = args.num_inference_steps if args.num_inference_steps is not None else (4 if args.turbo else 30)
     args.guidance_scale = args.guidance_scale if args.guidance_scale is not None else (1.0 if args.turbo else 3.0)
     if args.turbo and (args.guidance_scale != 1.0 or args.negative_prompt.strip()):
@@ -80,6 +82,18 @@ def main(argv=None):
             for prompt, subject in zip(args.prompts, args.subjects or args.prompts):
                 if not subject.strip() or subject.casefold() not in f"{args.style} {prompt}".casefold():
                     raise ValueError("Each subject phrase must occur in its corresponding prompt")
+    except ValueError as exc:
+        parser.error(str(exc))
+    from visual_anagrams.experiment_options import options_from_args as experiment_options_from_args, resolve_args
+    experiments=experiment_options_from_args(args)
+    resolve_args(args,experiments)
+    try:
+        experiments.validate(args.views,reduction=args.reduction,turbo=args.turbo,quality_method=args.quality_method)
+        if args.view_negative_prompts is not None and args.cross_negative != 'manual':
+            raise ValueError('--view_negative_prompts requires --cross_negative manual')
+        if args.cross_negative == 'manual' and (args.view_negative_prompts is None
+                or len(args.view_negative_prompts) != len(args.views) or any(not p.strip() for p in args.view_negative_prompts)):
+            raise ValueError('Manual cross negatives need one nonempty --view_negative_prompts entry per view')
     except ValueError as exc:
         parser.error(str(exc))
     if args.num_samples < 1 or args.num_inference_steps < 1:
@@ -150,10 +164,28 @@ def main(argv=None):
             settings=read_adapter_metadata(turbo_path),
         )
     print("Preparing Qwen text encoder (released before Iris inference)", flush=True)
-    positive, negative = encode_prompts(
-        cfg, prompts, args.negative_prompt, args.text_encoder_device, args.text_encoder_path,
-        encode_negative=not args.turbo,
-    )
+    negative_request=None
+    if args.cross_negative != 'off':
+        from visual_anagrams.negative_planner import NegativeRequest
+        negative_request=NegativeRequest(args.cross_negative,args.prompts,args.view_negative_prompts,args.style)
+    planning_args={'negative_request':negative_request} if negative_request is not None else {}
+    negative_fallback=None
+    try:
+        positive, negative = encode_prompts(
+            cfg, prompts, args.negative_prompt, args.text_encoder_device, args.text_encoder_path,
+            encode_negative=not args.turbo, **planning_args)
+    except ValueError as exc:
+        can_fallback=(negative_request is not None and negative_request.mode=='qwen'
+            and negative_request.result is None and 'Qwen subject extraction' in str(exc)
+            and (automatic_negative_default or args.negative_fallback))
+        if not can_fallback:raise
+        print(f'Qwen negative planning unavailable; using the shared negative only for this run. Reason: {exc}',flush=True)
+        negative_fallback=dict(mode='off',requested_mode='qwen',fallback=True,reason=str(exc))
+        negative_request=None
+        experiments.cross_negative='off'
+        resolve_args(args,experiments)
+        positive,negative=encode_prompts(cfg,prompts,args.negative_prompt,args.text_encoder_device,
+            args.text_encoder_path,encode_negative=not args.turbo)
     subject_positions, method_scorer = None, None
     if args.quality_method == "anagram_mtl":
         from transformers import AutoTokenizer
@@ -168,10 +200,10 @@ def main(argv=None):
         from visual_anagrams.advanced_sampling import PreviewScorer
 
         method_scorer = PreviewScorer(prompts)
-    elif args.quality_method == "adaptive":
+    elif args.quality_method == "adaptive" or experiments.component_guidance:
         from visual_anagrams.balancing import CleanPreviewScorer
 
-        print("Preparing adaptive balancing scorer on CPU", flush=True)
+        print("Preparing preview scorer on CPU", flush=True)
         method_scorer = CleanPreviewScorer(prompts)
 
     save_dir = Path(args.save_dir) / args.name
@@ -183,7 +215,9 @@ def main(argv=None):
                     model_path_resolved=str(directory.resolve()), model_manifest=manifest,
                     iris_code_revision=CODE_REVISION, text_encoder_id=TEXT_ID,
                     text_encoder_revision=TEXT_REVISION if args.text_encoder_path is None else None,
-                    size=1024, turbo_lora=turbo_metadata, subject_token_positions=subject_positions)
+                    size=1024, turbo_lora=turbo_metadata, subject_token_positions=subject_positions,
+                    quality_experiments=experiments.as_dict(),
+                    resolved_negative_plan=negative_request.result if negative_request else negative_fallback)
     (save_dir / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     for index in range(args.num_samples):
         seed = args.seed + index
@@ -194,7 +228,8 @@ def main(argv=None):
         if args.quality_method == "adaptive":
             from visual_anagrams.balancing import AdaptiveBalancer
 
-            mixer = AdaptiveBalancer(views, method_scorer)
+            mixer = AdaptiveBalancer(views, method_scorer,contrastive=experiments.contrastive,
+                                     freeze_below=experiments.freeze_below)
         mixer_args = {"prediction_mixer": mixer} if mixer is not None else {}
         if args.quality_method in ("anagram_mtl", "syncvc"):
             from visual_anagrams.advanced_sampling import sample_advanced
@@ -212,15 +247,24 @@ def main(argv=None):
                 **mixer_args,
             )
         else:
+            experiment_details={}
+            experiment_args=dict(experiments=experiments,
+                view_negative=negative_request.encoding if negative_request else None,
+                component_scorer=method_scorer if experiments.component_guidance else None,
+                experiment_diagnostics=experiment_details) if experiments.enabled else {}
             image = sample_iris(
                 model, positive, negative, views, generator=generator, device=args.device,
                 num_inference_steps=args.num_inference_steps, guidance_scale=args.guidance_scale,
                 reduction=args.reduction, shift=args.shift, order=args.solver_order,
                 num_train_timesteps=cfg.flow.num_train_timesteps, prediction=cfg.flow.prediction,
                 **mixer_args,
+                **experiment_args,
             )
         if mixer is not None:
             diagnostics = mixer.diagnostics()
+        if experiments.enabled:
+            diagnostics=dict(balancing=diagnostics if mixer else None,
+                experiments=(experiment_details if not args.turbo else dict(options=experiments.as_dict())))
         sample_dir = save_dir / f"{seed:04}"
         sample_dir.mkdir(parents=True, exist_ok=True)
         save_illusion(image.cpu(), views, sample_dir)

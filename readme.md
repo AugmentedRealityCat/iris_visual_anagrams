@@ -1,16 +1,16 @@
-
-
 ﻿# Visual Anagrams with Iris 3B INT8
-<img width="3823" height="2051" alt="GUI_VA" src="https://github.com/user-attachments/assets/2d48d687-4c98-4c5f-9bdb-da0e56285b3b" />
+<img width="3829" height="2064" alt="GUI_VA" src="https://github.com/user-attachments/assets/dbf59f67-5bd2-447f-aa4f-22a1d825c378" />
 
 
 `generate.py` now uses [Aikimi/iris-3b-int8](https://huggingface.co/Aikimi/iris-3b-int8), replacing DeepFloyd IF's two-stage generation with one **1024 x 1024 pixel-space** generation pass. Every denoising step predicts each prompted view, applies its inverse transformation, and combines the aligned predictions. There is no VAE or separate upscaler in this path.
 
 **Standard Iris is the default:** 30 steps, guidance 3, Auto view combining,
 flow shift **8**, solver order 2, and **adaptive balancing for two geometric
-views**. This profile uses the strongest weaker-view alignment from our
-[latest 30-step comparison](examples/standard-adaptive/README.md). It is a
-starting point based on a small test, not a universally optimal setting.
+views**, now with **Qwen cross-view negatives at strength 0.5**. The
+[latest quality pilot](examples/quality-experiments/README.md) also enables
+adaptive component guidance for Standard low/high-frequency and grayscale/colour
+pairs. These are starting points from a small test, not universally optimal settings.
+Cross negatives add roughly 50% more model evaluations; choose **Off** for speed.
 Turbo r2 remains an
 optional fast sampler for previews, seed searches, and puzzle experiments.
 Turbo starts at four steps, guidance 1 and shift 8, with adaptive balancing for
@@ -18,18 +18,39 @@ two geometric Auto/Mean views. Component groups and other view counts use Classi
 
 ## Example gallery and showcase
 
+[**Extended twelve-method showcase: showcase4.mp4**](examples/showcase-v3/showcase4.mp4)
 
+The extended video adds **jigsaw, skew/warp, fine block shuffle, frequency
+hybrids, grayscale/colour components and motion blur**. The new warp and
+component examples use 30-step Standard; the two new puzzles were refined from
+four-step Turbo previews to 30-step Standard. Earlier rotation images are reused,
+with no new rotation runs.
+Component methods use Sum with Classic balancing; geometric examples use
+Mean with Adaptive balancing. [Gallery, prompts and settings](examples/showcase-v3/README.md).
 
+[![Added methods](examples/showcase-v3/new-methods.jpg)](examples/showcase-v3/README.md)
 
+Earlier six-method showcase:
 
-https://github.com/user-attachments/assets/0552699d-1ef9-4c51-8209-ec40024a22f8
+[**Six-method character showcase: watch / download**](examples/showcase-v2/showcase3-small.mp4)
 
+![New showcase: six transformations and themes](examples/showcase-v2/gallery.jpg)
 
+Joker/Batman, volcano/dragon, Anubis/pharaoh, haunted castle/Dracula,
+Stormtrooper/Darth Vader and Iron Man/Spider-Man. Rotations use **30-step
+Standard Iris**; the other transformations use **four-step Turbo r2**. All use
+shift 8 and adaptive balancing. The 65-second video has prompt labels and
+full-frame animations without the old outer white borders.
+[Prompts, settings, GIFs and selection details](examples/showcase-v2/README.md).
+
+Earlier Turbo showcase:
+
+https://github.com/user-attachments/assets/88020cdb-0cd1-42b6-b5cc-13d67ae80aea
 
 
 [Prompts, seeds and settings](examples/showcase/manifest.json)
 
-The showcase above was generated with Turbo r2 and Classic combining
+The earlier showcase above was generated with Turbo r2 and Classic combining
 (`--quality_method plain` to reproduce that choice). For a comparison of the current
 Standard settings with Turbo, see the [earlier quality test gallery](examples/quality-pilot/README.md).
 
@@ -77,6 +98,11 @@ Double-click **`launch-gui.bat`**, or run:
 The desktop window opens without loading or downloading models. Enter a prompt
 and transformation for each view, adjust the style, steps, guidance and seed,
 then click **Generate illusion**. Use **Add another view** for more perspectives.
+The editable **Shared style** dropdown offers 29 presets, including gouache,
+charcoal, pen and ink, woodcut, engraving, linocut, comic and graphic novel art,
+art nouveau, art deco, stained glass, mosaic, paper cut, origami, silhouettes,
+vector illustration, screenprint, pixel art and Japanese woodblock prints.
+You can also type your own style or clear the field.
 The first generation downloads the required weights if they are not cached.
 The initial settings are **Standard Iris**, **30 steps**, **guidance 3**,
 **flow shift 8**, **Auto** combining and **adaptive balancing** for the initial
@@ -285,6 +311,10 @@ Select **Classic** in the GUI, or pass `--quality_method plain`, to use equal
 weights explicitly. The lower-level sampler API still uses Classic unless a
 balancer is passed.
 
+Standard paired Adaptive views also use Qwen cross negatives following the newer
+quality pilot below. Pass `--cross_negative off` to reproduce the earlier
+Adaptive-only comparisons in this section.
+
 [Production-method comparison and images](examples/adaptive-balancing/README.md):
 held-out weaker-view scores changed from **0.225 to 0.230** (four steps / shift 4),
 **0.245 to 0.273** (four steps / shift 8), and **0.230 to 0.256** (eight steps /
@@ -299,6 +329,121 @@ shift 8, adding about 18 seconds per image. Both faces still occupy separate
 areas. **Standard now starts at 30 steps, guidance 3, shift 8 and adaptive
 balancing** for paired geometric views. This chooses the strongest tested
 Standard alignment profile while keeping Classic available as an override.
+
+### Quality experiments and tested defaults
+
+The Visual Anagrams page has a **Quality experiments** card. The options below
+can be controlled independently. The [full-size quality pilot](examples/quality-experiments/README.md)
+contains nine new 1024-pixel, 30-step trials against four verified cached controls.
+**Qwen cross negatives at strength 0.5 are now the default for Standard paired
+geometric Auto/Mean views with Adaptive balancing**: weaker-view alignment and
+prompt separation improved on both Venom/Spawn warp and Hulk/Loki jigsaw.
+The gains are modest and do not guarantee a convincing illusion. This uses six
+instead of four Iris forwards per guided step, roughly 50% more sampling work.
+Classic geometric views retain shared negatives unless explicitly changed.
+
+The pilot also supports **component guidance by default for Standard low/high-frequency and
+grayscale/colour pairs**, using Classic and Sum. The rose-view score was almost
+unchanged, while the frequency hybrid's weaker-view score improved about 14%.
+Both component trials used fewer model evaluations and ran faster in this check.
+Untested motion groups and Turbo retain their previous settings.
+The base defaults remain Standard, 30 steps, guidance 3, shift 8 and Adaptive
+balancing for paired geometric views.
+Use **Show / hide experiment parameters** to adjust their strengths and timing.
+
+| GUI option | CLI switch | Compatibility and behaviour |
+| --- | --- | --- |
+| Contrastive adaptive balancing | `--contrastive_balancing` | Two geometric Mean/Auto views, Adaptive; Standard or Turbo. Balances own-prompt minus other-prompt similarity, retaining the existing bounded, smoothed weights. |
+| Cross-view negative prompts | `--cross_negative subjects`, `qwen`, or `manual` | Standard, two geometric Mean/Auto views, Classic or Adaptive. Uses a different subject negative for each view. |
+| Adaptive component guidance | `--component_guidance` | Standard, Classic, complete low/high, grayscale/colour, or motion/residual groups with Sum/Auto. Scores the observable filtered/full views and adjusts each branch's extra CFG. |
+| Schedule CFG in middle noise levels | `--guidance_schedule middle` | Standard, Classic or Adaptive. Smoothly ramps extra CFG inside a flow-noise interval; outside it, guidance is 1, retaining text conditioning. |
+| Conflict-aware prompt directions | `--conflict_projection` | Standard, two geometric Mean/Auto views, Classic or Adaptive. Dampens conflicting conditional directions while preserving their shared-reference predictions. |
+
+The GUI disables incompatible controls and restores Standard experiment settings
+when returning from Turbo. Defaults are shared with the CLI and explicit choices
+override them. To disable automatic component guidance, uncheck its GUI box or
+use `--no_component_guidance`. Other boolean options have equivalent
+`--no_contrastive_balancing` and `--no_conflict_projection` overrides;
+use `--cross_negative off`, `--guidance_schedule constant` or
+`--balance_freeze_below 0` for the remaining options. These options do not combine with Anagram-MTL or
+SyncVC. New experiments are saved under `quality_experiments` in `metadata.json`.
+When enabled, each sample's `quality.json` contains `balancing` and `experiments`
+with the actual margins, weights, guidance scales, component gains or conflict
+measurements. Controller state starts fresh for every sample.
+
+**Automatic negative prompts:** choose **Qwen subject extraction** to reuse the
+bundled Qwen3-VL-4B-Instruct text decoder. It extracts short, distinct subject
+phrases from the two prompts and swaps them: Venom's negative is Spawn, and
+Spawn's negative is Venom. Shared style words are excluded. This runs while Qwen
+is already loaded for encoding; its tied token embeddings supply the language
+head, so no second LLM or additional model weights are needed. Qwen is released
+before Iris loads. The resolved negatives and raw planning response are printed
+and saved as `resolved_negative_plan` in `metadata.json`.
+
+The extracted phrases must occur in their own prompt and distinguish it from
+the other prompt. If Qwen subject extraction fails under the automatic CLI default
+or in the GUI, the run logs the reason and falls back to shared negatives only;
+`resolved_negative_plan` records that fallback and the actual mode is saved as
+`off`. An explicit CLI `--cross_negative qwen` stops on invalid output unless
+`--negative_fallback` is supplied. Encoding and model errors still stop the run.
+**Other subject (automatic)**
+uses a simple shared-prefix/suffix removal instead of LLM generation. For full
+control, choose **Manual per-view negatives** and separate them with `|`.
+The prompts you enter remain unchanged.
+
+For example, to enable only Qwen-planned cross negatives on a warp:
+
+```powershell
+python generate.py --name venom-spawn-negative --standard --prompts "Venom, a black symbiote with sharp teeth" "Spawn, a masked antihero with green eyes and a red cape" --style "a dark comic book portrait of" --views identity skew --view_args 0 0.75 --cross_negative qwen
+```
+
+Manual CLI negatives use `--cross_negative manual --view_negative_prompts
+"Spawn" "Venom"`. `--cross_negative_strength` blends the shared negative and
+other-subject reference, from 0 to 1 (initial experimental value: 0.5). Between
+0 and 1 this adds one model forward per view at guided steps. At 1 it can replace
+the shared negative forward, unless conflict projection also needs that reference.
+Cross negatives can suppress useful shared features, so stronger is not assumed
+to be better.
+
+For component guidance, keep the complete partition and Classic balancing:
+
+```powershell
+python generate.py --name vader-castle-component --standard --prompts "Darth Vader's helmet" "a haunted castle" --style "a monochrome engraving of" --views low_pass high_pass --view_args 2 2 --quality_method plain --component_guidance
+```
+
+Component guidance keeps a single shared reference `u` and combines
+`u + sum_i s_i * P_i(c_i - u)`, where the component operators sum to identity.
+It adapts extra CFG gains, bounded to 0.5–1.5 with 50% smoothing, from CPU CLIP
+scores every two steps below noise 0.95. It does not reweight the component
+partition itself. The shared reference needs only one model evaluation per step.
+
+Scheduled CFG parameters are `--guidance_low 0.1 --guidance_high 0.9
+--guidance_ramp 0.05`. These bounds refer to **flow noise**, not percentages of
+steps: 1 is noise and 0 is clean. Smooth ramps avoid an abrupt CFG switch.
+`--balance_freeze_below 0.6` holds Adaptive weights or component gains fixed near
+the end of the tested 30-step / shift-8 grid; its default remains 0, disabled.
+At these settings the lowest model-evaluation noise is about 0.216, and the
+last two balancing updates occur around 0.551 and 0.363. A freeze threshold of
+0.1 therefore has no effect on this grid; 0.6 skips those two updates. The
+freeze trial did not improve the warp result, so it is not enabled by default.
+
+Conflict projection uses the original two conditional directions symmetrically,
+only between noise 0.05 and 0.95. `--conflict_strength` is in [0,1], initially
+0.5 when the option is enabled. It is a PCGrad-inspired inference heuristic,
+not a claim that flow velocities satisfy gradient-descent guarantees. All five
+options run without backpropagation through Iris.
+
+Implementation checks cover the math, neutral sampler equivalence, GUI/CLI routing,
+metadata and Qwen's cached-model subject extraction. Full-size comparisons,
+images, scores and the final default decision are in the
+[quality-pilot report](examples/quality-experiments/README.md). This is a small
+matched pilot, not a universal optimum. Combinations were not validated; the
+selected defaults use only the individually tested option for each context.
+
+Research background: [Visual Anagrams](https://arxiv.org/abs/2311.17919),
+[Factorized Diffusion](https://arxiv.org/abs/2404.11615),
+[guidance intervals](https://arxiv.org/abs/2404.07724), and
+[PCGrad](https://arxiv.org/abs/2001.06782).
 
 ### Optional Anagram-MTL and SyncVC methods
 
