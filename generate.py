@@ -32,10 +32,10 @@ def build_parser():
     parser.add_argument("--text_encoder_device", default="cuda", help="Use cpu to encode prompts without GPU memory")
     parser.add_argument("--model_path", help="Local INT8 export with config.yaml, model.safetensors and manifest.json")
     parser.add_argument("--text_encoder_path", help="Local Qwen3-VL-4B-Instruct directory")
-    parser.add_argument("--shift", type=float, default=4.0)
+    parser.add_argument("--shift", type=float, default=8.0, help="Anagram sampling default: 8")
     parser.add_argument("--solver_order", type=int, choices=[1, 2], default=2)
-    parser.add_argument("--quality_method", choices=["plain", "anagram_mtl", "syncvc"], default="plain",
-                        help="Optional experimental Iris adaptation (Standard, two geometric views)")
+    parser.add_argument("--quality_method", choices=["plain", "adaptive", "anagram_mtl", "syncvc"], default=None,
+                        help="Default: adaptive for two geometric Mean/Auto views, plain otherwise; MTL/SyncVC require Standard")
     parser.add_argument("--optimization_interval", type=int, default=5, help="Apply gradient optimization every N steps")
     parser.add_argument("--optimization_steps", type=int, default=1, help="Optimization passes at each selected step")
     parser.add_argument("--method_strength", type=float, default=None,
@@ -65,8 +65,10 @@ def main(argv=None):
         args.reduction = resolve_reduction(args.reduction, args.views, args.view_args)
     except ValueError as exc:
         parser.error(str(exc))
-    from visual_anagrams.method_options import MethodOptions
+    from visual_anagrams.method_options import MethodOptions, default_quality_method
 
+    if args.quality_method is None:
+        args.quality_method = default_quality_method(turbo=args.turbo, views=args.views, reduction=args.reduction)
     method_options = MethodOptions(args.quality_method, args.optimization_interval, args.optimization_steps,
                                    args.method_strength, not args.no_gradient_offload)
     args.method_strength = method_options.strength
@@ -166,6 +168,11 @@ def main(argv=None):
         from visual_anagrams.advanced_sampling import PreviewScorer
 
         method_scorer = PreviewScorer(prompts)
+    elif args.quality_method == "adaptive":
+        from visual_anagrams.balancing import CleanPreviewScorer
+
+        print("Preparing adaptive balancing scorer on CPU", flush=True)
+        method_scorer = CleanPreviewScorer(prompts)
 
     save_dir = Path(args.save_dir) / args.name
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -183,7 +190,13 @@ def main(argv=None):
         print(f"Generating sample {index + 1}/{args.num_samples}, seed {seed}", flush=True)
         generator = torch.Generator(device=args.device).manual_seed(seed)
         diagnostics = {}
-        if args.quality_method != "plain":
+        mixer = None
+        if args.quality_method == "adaptive":
+            from visual_anagrams.balancing import AdaptiveBalancer
+
+            mixer = AdaptiveBalancer(views, method_scorer)
+        mixer_args = {"prediction_mixer": mixer} if mixer is not None else {}
+        if args.quality_method in ("anagram_mtl", "syncvc"):
             from visual_anagrams.advanced_sampling import sample_advanced
 
             image = sample_advanced(model, positive, negative, views, options=method_options, prompts=prompts,
@@ -196,6 +209,7 @@ def main(argv=None):
             image = sample_turbo(
                 model, positive, views, generator=generator, device=args.device,
                 num_inference_steps=args.num_inference_steps, reduction=args.reduction, shift=args.shift,
+                **mixer_args,
             )
         else:
             image = sample_iris(
@@ -203,7 +217,10 @@ def main(argv=None):
                 num_inference_steps=args.num_inference_steps, guidance_scale=args.guidance_scale,
                 reduction=args.reduction, shift=args.shift, order=args.solver_order,
                 num_train_timesteps=cfg.flow.num_train_timesteps, prediction=cfg.flow.prediction,
+                **mixer_args,
             )
+        if mixer is not None:
+            diagnostics = mixer.diagnostics()
         sample_dir = save_dir / f"{seed:04}"
         sample_dir.mkdir(parents=True, exist_ok=True)
         save_illusion(image.cpu(), views, sample_dir)

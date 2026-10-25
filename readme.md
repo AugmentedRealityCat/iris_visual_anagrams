@@ -1,13 +1,18 @@
-# Visual Anagrams with Iris 3B INT8
-<img width="3823" height="2051" alt="GUI_VA" src="https://github.com/user-attachments/assets/5119a86e-2f58-4c81-b080-e457326e6717" />
+﻿# Visual Anagrams with Iris 3B INT8
+<img width="3829" height="2064" alt="GUI_VA" src="https://github.com/user-attachments/assets/dbf59f67-5bd2-447f-aa4f-22a1d825c378" />
 
 
 `generate.py` now uses [Aikimi/iris-3b-int8](https://huggingface.co/Aikimi/iris-3b-int8), replacing DeepFloyd IF's two-stage generation with one **1024 x 1024 pixel-space** generation pass. Every denoising step predicts each prompted view, applies its inverse transformation, and combines the aligned predictions. There is no VAE or separate upscaler in this path.
 
 **Standard Iris is the default:** 30 steps, guidance 3, Auto view combining,
-flow shift 4, and solver order 2. These starting settings were selected after
-our [quality pilot](examples/quality-pilot/README.md). Turbo r2 remains an
+flow shift **8**, solver order 2, and **adaptive balancing for two geometric
+views**. This profile uses the strongest weaker-view alignment from our
+[latest 30-step comparison](examples/standard-adaptive/README.md). It is a
+starting point based on a small test, not a universally optimal setting.
+Turbo r2 remains an
 optional fast sampler for previews, seed searches, and puzzle experiments.
+Turbo starts at four steps, guidance 1 and shift 8, with adaptive balancing for
+two geometric Auto/Mean views. Component groups and other view counts use Classic.
 
 ## Example gallery and showcase
 
@@ -16,8 +21,9 @@ https://github.com/user-attachments/assets/88020cdb-0cd1-42b6-b5cc-13d67ae80aea
 
 [Prompts, seeds and settings](examples/showcase/manifest.json)
 
-The showcase above was generated with Turbo r2. For a comparison of the current
-Standard defaults with Turbo, see the [quality test gallery](examples/quality-pilot/README.md).
+The showcase above was generated with Turbo r2 and Classic combining
+(`--quality_method plain` to reproduce that choice). For a comparison of the current
+Standard settings with Turbo, see the [earlier quality test gallery](examples/quality-pilot/README.md).
 
 This is an experimental adaptation of [Visual Anagrams](https://dangeng.github.io/visual_anagrams/) by Daniel Geng, Aaron Park and Andrew Owens. Iris has different training and sampling behavior from DeepFloyd; illusion quality needs experimentation with prompts, guidance and seeds.
 
@@ -64,9 +70,13 @@ The desktop window opens without loading or downloading models. Enter a prompt
 and transformation for each view, adjust the style, steps, guidance and seed,
 then click **Generate illusion**. Use **Add another view** for more perspectives.
 The first generation downloads the required weights if they are not cached.
-The initial settings are **Standard Iris**, **30 steps**, **guidance 3**, and
-**Auto** combining. Selecting a Turbo mode sets four steps and built-in guidance;
+The initial settings are **Standard Iris**, **30 steps**, **guidance 3**,
+**flow shift 8**, **Auto** combining and **adaptive balancing** for the initial
+two geometric views. Selecting a Turbo mode sets four steps, shift 8 and built-in guidance;
 switching back restores your previous Standard settings.
+Turbo starts with adaptive balancing when the current run has two geometric
+views and Auto/Mean combining. You can select Classic instead; switching
+between generation modes remembers your choice for each mode.
 
 The GUI shows progress and logs, lets you cancel generation, and previews each
 completed sample in **Original image** and **All views** tabs. Existing run names
@@ -74,6 +84,92 @@ receive a numeric suffix to preserve previous results. **Open results** opens th
 output folder; **Load result** previews an image saved earlier. Advanced settings
 include CPU text encoding and local Iris/Qwen model folders. No additional GUI
 packages are needed on Windows; Linux may require its `python3-tk` package.
+
+Use **Dark mode** at the top right to switch the appearance of both pages.
+Your choice is remembered for the next launch. It changes controls, dropdowns,
+logs and preview backgrounds; saved images keep their original colours.
+
+### Iris Tools page
+
+The separate **Iris Tools** tab uses Iris for tasks beyond visual anagrams.
+The **Visual Anagrams** tab keeps its own prompts and settings. Only one model
+task runs at a time; weights are released when its worker exits.
+
+| Task | Use | Weights |
+| --- | --- | --- |
+| **Image generation** | One prompt → an ordinary image, with square, portrait or landscape sizes | Existing generation INT8 model and Qwen; Standard or optional Turbo LoRA |
+| **Image-to-image (experimental)** | Add flow noise to an input, then denoise with a prompt; useful for variations and restyling | Existing generation INT8 model and Qwen; Standard only |
+| **Relative depth** | Estimate near/far structure from one image | Separate depth INT8 model; no Qwen |
+| **Restore / upscale** | Restore a low-quality image and enlarge it up to 4× | Separate restoration INT8 model; no Qwen |
+
+Ordinary generation, monocular depth, and restoration/upscaling are released
+Iris tasks. The depth and restoration models are task-specific fine-tunes;
+the generation checkpoint cannot substitute for them.
+[Official Iris documentation](https://github.com/speridlabs/iris-3b#depth-image-restoration-and-upscaling),
+[INT8 model card](https://huggingface.co/Aikimi/iris-3b-int8).
+
+Choose a task and, where needed, browse for an input image. The page shows
+**Input** and **Result** previews, progress, logs, cancellation and an output
+folder button. Existing GUI run names receive a numeric suffix. Results go to
+`results/iris-tools/` by default, with `metadata.json` for the run and
+`run.json` beside each result.
+
+Depth and restoration each download approximately **3.23 GB of weights plus
+37 MB of empty-prompt embeddings** on first use. Only the selected task is
+downloaded. Files are checked against the pinned export's SHA-256 manifest.
+A local task folder can be selected with **Local INT8 task model**; for depth
+or restoration this must be the matching export or its parent folder.
+
+- **Generation:** size presets follow the upstream model's approximately
+  one-megapixel buckets. Standard starts at 30 steps and guidance 3. Turbo
+  starts at four steps and guidance 1; switching back restores the Standard
+  values. The optional adapters are the existing community LoRAs, rather than
+  the newer, separate official full-model Turbo checkpoint.
+- **Image-to-image:** strength is in `(0, 1]`, default 0.5. Lower values retain
+  more of the input. The input is resized and centre-cropped to the selected
+  output shape. This is an experimental noise-and-denoise adaptation, not a
+  model trained to follow editing instructions or preserve identity.
+- **Depth:** returns affine-invariant relative log depth, **not metres**.
+  `depth.npy` retains raw float32 values; `depth16.png` maps nearer regions to
+  white using the output's 2nd–98th percentiles. `result.png` is a colour preview.
+  Inference defaults to a 1024-pixel long-side cap, then returns depth at the
+  original input resolution.
+- **Restoration:** runs the upstream 4× one-step recipe with overlapping
+  1024-pixel tiles and wavelet colour correction. **1×** and **2×** resize the
+  restored 4× result. By default large inputs are first limited to 512 pixels
+  on the short side and 1024 on the long side, so the output size is based on
+  that processed input. Uncheck **Limit large restoration inputs** to keep
+  native input dimensions; time and memory grow with output size. Generated
+  details may differ from the original scene.
+
+The same tasks are available without the GUI:
+
+```powershell
+# Ordinary landscape generation (existing generation weights):
+.\.venv\Scripts\python.exe iris_tools.py --task generate --prompt "a watercolor painting of a lighthouse" --size 1344x768
+
+# Experimental image-to-image:
+.\.venv\Scripts\python.exe iris_tools.py --task img2img --input photo.jpg --prompt "an oil painting of a coastal village" --strength 0.35
+
+# Relative depth, including raw NPY and 16-bit PNG:
+.\.venv\Scripts\python.exe iris_tools.py --task depth --input photo.jpg
+
+# Restore and enlarge 4x, or use --scale 1 to retain the processed input size:
+.\.venv\Scripts\python.exe iris_tools.py --task restore --input photo.jpg --scale 4
+```
+
+Use `--text_encoder_device cpu` for generation without Qwen on the GPU.
+`--model_path` selects local task weights and `--text_encoder_path` selects a
+local Qwen folder. CLI runs get timestamped names unless `--name` is given;
+an existing CLI output folder is rejected to preserve previous results.
+
+**Checked on the RTX 3060 12 GB:** all four task paths completed. Landscape
+generation at 1344×768 took 188 seconds (30 steps), image-to-image took
+96 seconds (15 steps), and single-pass depth/restoration took about 4 seconds
+each. Peak allocated VRAM was **6.78–6.87 GiB** for these examples. Model
+loading and text encoding are excluded from those processing times.
+[Example outputs, exact settings and test limitations](examples/iris-tools/README.md).
+The regression suite passed **162 checks**.
 
 ### Moving images and prompt labels
 
@@ -136,8 +232,8 @@ optical illusion.
 Standard guidance 3–4 gave stronger overall alignment than the four-step Turbo
 baseline; increasing guidance to 5 did not improve the mean score. Eight Turbo
 steps were a useful experiment, while sixteen were unreliable. Adaptive
-weighting improved both tested pairs at little extra sampling time, but is
-currently available only in the research scripts. Bounded variance correction
+weighting improved both tested pairs at little extra sampling time and is now
+available as a standalone GUI option. Bounded variance correction
 had little practical effect.
 
 This pilot used only one seed per pair and did not test puzzles, all other
@@ -147,6 +243,119 @@ both views, try different seeds, and treat these settings as a starting point.
 The two CLIP evaluators also disagreed on some rankings.
 
 [Full results, both evaluators, comparison images and reproduction commands](examples/quality-pilot/README.md).
+
+### Adaptive balancing
+
+Select **Quality method → Adaptive balancing (experimental)** in the Visual
+Anagrams page. It works with **Standard Iris or Turbo**, with **two geometric
+views** and **Auto/Mean** combining. The gradient-optimization fields are hidden
+because this method adjusts prediction weights without attention gradients or
+variance correction. Factorized component groups and Alternate combining use
+Classic.
+
+The method scores clean previews with a pinned **CLIP ViT-B/32 on CPU** every
+two steps below noise level 0.95. The weaker view receives more weight, with
+desired weights bounded to 0.25–0.75 and smoothed halfway toward the previous
+weights. Each new sample starts at equal weights. The first use downloads
+about 600 MB of CLIP weights if they are not cached. The GUI itself loads no
+models when it opens.
+
+```powershell
+.\.venv\Scripts\python.exe generate.py --name adaptive-owl-dog --prompts "an owl" "a dog" --style "a watercolor painting of" --views identity rotate_180 --turbo --quality_method adaptive
+```
+
+Omit `--turbo` for Standard sampling. Adaptive balancing uses the selected flow
+shift, step count and Standard solver order. Its per-step scores, weights and
+scorer revision are saved in `quality.json` beside each output.
+
+**Default policy:** adaptive balancing is selected by default for two geometric
+Auto/Mean views in both Standard and Turbo. It improved weaker-view alignment
+in the earlier Turbo pilot, three subsequent Turbo comparisons, and both
+30-step Standard comparisons below. The anagram flow-shift default is 8.
+Other view counts, component groups and Alternate combining use Classic.
+Select **Classic** in the GUI, or pass `--quality_method plain`, to use equal
+weights explicitly. The lower-level sampler API still uses Classic unless a
+balancer is passed.
+
+[Production-method comparison and images](examples/adaptive-balancing/README.md):
+held-out weaker-view scores changed from **0.225 to 0.230** (four steps / shift 4),
+**0.245 to 0.273** (four steps / shift 8), and **0.230 to 0.256** (eight steps /
+shift 4), adding roughly 1–2 seconds per Turbo image. The images still separate the
+subjects, so this is evidence for better alignment, not a convincing illusion
+or a general quality guarantee.
+
+A [30-step Standard adaptive check](examples/standard-adaptive/README.md)
+compared both shifts 4 and 8 with their Classic controls. Adaptive raised the
+weaker-view score from 0.239 to 0.250 at shift 4 and from 0.255 to 0.263 at
+shift 8, adding about 18 seconds per image. Both faces still occupy separate
+areas. **Standard now starts at 30 steps, guidance 3, shift 8 and adaptive
+balancing** for paired geometric views. This chooses the strongest tested
+Standard alignment profile while keeping Classic available as an override.
+
+### Optional Anagram-MTL and SyncVC methods
+
+The GUI's **Quality method** menu offers **Classic**,
+**Adaptive balancing (experimental)**, **Anagram-MTL · Iris (experimental)**,
+and **SyncVC · Iris (experimental)**. Anagram-MTL and SyncVC require
+**Standard Iris** and **two geometric views** with Auto/Mean combining. Turbo
+offers Classic or standalone adaptive balancing; factorized components use Classic.
+
+Use the default budget of **one optimization pass every five steps**, strength
+**0.05**, with 30 generation steps and guidance 3. Increasing the passes or
+optimizing more often costs more time. CPU activation offloading is enabled
+by default to reduce GPU memory; the methods still use additional system RAM
+and more VRAM than Classic. They keep the image model's weights frozen.
+
+For Anagram-MTL, enter the main subject words separated by `|`, such as
+`owl | dog`. Leave this field empty to use each view's full prompt phrase.
+Subject words must appear in their corresponding prompts.
+
+```powershell
+# Anagram-MTL adaptation: balancing, variance correction, attention overlap
+.\.venv\Scripts\python.exe generate.py --name mtl-owl-dog --prompts "an owl" "a dog" --style "a watercolor painting of" --views identity rotate_180 --quality_method anagram_mtl --subjects owl dog
+
+# SyncVC adaptation: optimize controls coupling two denoising trajectories
+.\.venv\Scripts\python.exe generate.py --name syncvc-owl-dog --prompts "an owl" "a dog" --style "a watercolor painting of" --views identity rotate_180 --quality_method syncvc
+```
+
+`--optimization_interval`, `--optimization_steps`, and `--method_strength`
+control the optimization budget. `--no_gradient_offload` keeps saved activations
+on the GPU for machines with more free VRAM. Per-step diagnostics and the actual
+solver are saved as `quality.json` beside each generated PNG.
+
+These are **Iris adaptations**, not reproductions of the DeepFloyd pipelines:
+
+- **Anagram-MTL:** scores clean previews with CPU CLIP, balances the predicted
+  velocities, applies bounded variance correction in noise space, and takes
+  gradient steps to increase overlap of subject attention maps. It reads real
+  image-to-text probabilities from Iris's first single-stream joint-attention
+  block, using queries pooled to at most 32 × 32. Attention edits are scaled by
+  `t * (1 - t)` to limit their effect near pure noise and the clean endpoint.
+  The original uses a noise-aware CLIP encoder and U-Net cross-attention maps.
+- **SyncVC:** maintains two trajectories and optimizes image-space control
+  variables for clean-image agreement plus prior regularization. It uses a
+  **first-order flow Euler solver**, rather than the Classic DPM order setting.
+  The original DDIM coefficients are replaced by Iris's `alpha = 1 - t` and
+  `sigma = t`; optimization skips the near-pure-noise endpoint. The one-pass,
+  five-step interval is a smaller optimization budget than the reference code.
+
+Both use block checkpointing and a memory-saving backward pass that recreates
+frozen INT8 linear weights instead of retaining dequantized weight copies.
+Their quality depends on prompts, seed, and guidance strength. Keep Classic
+as the baseline when comparing results.
+
+[Small RTX 3060 comparison, outputs and diagnostics](examples/advanced-methods/README.md)
+tests both options with one prompt pair and seed, reusing the earlier Classic
+baseline. It also preserves the failed first MTL trial and its corrective test.
+Neither adaptation improved that pair: held-out weaker-view CLIP scores were
+**0.305 Classic**, **0.293 MTL**, and **0.188 SyncVC**. Corrected MTL took
+about **11 minutes** and SyncVC **16 minutes**, both using about **9.45 GiB**
+of allocated VRAM on the RTX 3060. MTL and SyncVC remain optional; the paired
+anagram default uses standalone adaptive balancing. One pair cannot establish
+whether these larger adaptations help other prompts.
+
+Sources: [Anagram-MTL](https://github.com/Pixtella/Anagram-MTL),
+[SyncVC](https://github.com/mandt-lab/SyncVC).
 
 ### Turbo LoRA (optional fast mode)
 
@@ -185,9 +394,31 @@ cores, are merged in place. Adapter identity and settings are saved in metadata.
 This INT8, multi-view adaptation has automated CPU/CUDA checks and a completed
 1024-square Turbo smoke run. Illusion quality still depends on prompts and seeds.
 
+A small [four-step flow-shift comparison](examples/flow-shift/README.md)
+tested shifts 2, 4 and 6 with Joker upright and Batman after a 180° rotation.
+Shifts 2 and 4 were close; 6 scored lowest for Batman. All three remained
+Joker-dominated, so this check does not justify changing the default shift of 4.
+
+The [extended shift/step-count check](examples/flow-shift-extended/README.md)
+adds shifts 1, 3 and 8 at four steps, plus eight-step runs at shifts 2, 4 and 6.
+Four steps / shift 8 had the strongest weaker-view score for this pair, but
+none made a convincing Joker-to-Batman transformation. Eight steps roughly
+doubled time without improving the mean score across matched shifts.
+
+With the current adaptive default, a [higher-shift check](examples/high-flow-shift/README.md)
+added shifts 12, 16 and 24 at four steps. None beat shift 8's weaker-view score
+for this pair. At shift 24, the four-step schedule never triggers adaptive
+scoring, so weights remain equal; the report records this interaction.
+
+A [30-step Standard comparison](examples/standard-flow-shift/README.md), with
+CFG 3 and Classic combining, found stronger Batman alignment at shift 8 than
+4 (weaker-view score 0.255 versus 0.239). Both still place the two faces in
+separate areas; this single pair does not establish a new default.
+
 ### Standard generation (default)
 
-The CLI uses 30 steps and guidance 3 without extra sampling flags. `--standard`
+The CLI uses 30 steps, guidance 3, shift 8 and adaptive balancing for paired
+geometric views without extra sampling flags. `--standard`
 can also be supplied explicitly. Override steps or guidance when experimenting.
 
 ```powershell
@@ -210,7 +441,8 @@ Useful options:
 - `--reduction auto` (default): average geometric view predictions and sum factorized components. `alternate` cycles geometric views between steps; `mean` and `sum` remain explicit options. Component methods require a complete matching set and `auto` or `sum`: low/high frequencies with the same sigma, grayscale/color, all three frequency bands, motion/residual, or scale weights that sum to 1.
 - For rotations and other geometric views, use **Auto/Mean**. The pilot's **Sum** controls produced severely overexposed images.
 - `--view_args`: one argument per view, following the existing view definitions.
-- `--shift 4.0` and `--solver_order 2`: upstream flow sampling defaults.
+- `--shift 8.0` and `--solver_order 2`: current anagram defaults. Pass `--shift 4`
+  for the earlier/upstream schedule, or `--quality_method plain` for Classic combining.
 - `--model_path PATH`: a local Iris INT8 generation export containing `model.safetensors`, `config.yaml`, and `manifest.json`.
 - `--text_encoder_path PATH`: a local Qwen3-VL-4B-Instruct directory.
 
