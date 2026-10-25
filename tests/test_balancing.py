@@ -82,6 +82,8 @@ def test_cli_routes_balancing_resets_each_sample_and_saves_diagnostics(tmp_path,
         monkeypatch.setattr(turbo_module,"resolve_turbo_adapter",lambda _:tmp_path)
         monkeypatch.setattr(turbo_module,"read_adapter_metadata",lambda _:dict(rank=64,alpha=64))
     main(["--name","adaptive","--save_dir",str(tmp_path),"--prompts","owl","dog","--views","identity","rotate_180",
+          "--cross_negative","off","--no_contrastive_balancing","--no_conflict_projection",
+          "--guidance_schedule","constant","--balance_freeze_below","0",
           "--num_samples","2","--num_inference_steps","4","--device","cpu",
           *(["--quality_method",method] if method else []),
           "--text_encoder_device","cpu",*(["--turbo"] if turbo else [])])
