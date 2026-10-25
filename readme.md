@@ -35,26 +35,6 @@ Mean with Adaptive balancing. [Gallery, prompts and settings](examples/showcase-
 
 
 
-![New showcase: six transformations and themes](examples/showcase-v2/gallery.jpg)
-
-Joker/Batman, volcano/dragon, Anubis/pharaoh, haunted castle/Dracula,
-Stormtrooper/Darth Vader and Iron Man/Spider-Man. Rotations use **30-step
-Standard Iris**; the other transformations use **four-step Turbo r2**. All use
-shift 8 and adaptive balancing. The 65-second video has prompt labels and
-full-frame animations without the old outer white borders.
-[Prompts, settings, GIFs and selection details](examples/showcase-v2/README.md).
-
-Earlier Turbo showcase:
-
-https://github.com/user-attachments/assets/88020cdb-0cd1-42b6-b5cc-13d67ae80aea
-
-
-[Prompts, seeds and settings](examples/showcase/manifest.json)
-
-The earlier showcase above was generated with Turbo r2 and Classic combining
-(`--quality_method plain` to reproduce that choice). For a comparison of the current
-Standard settings with Turbo, see the [earlier quality test gallery](examples/quality-pilot/README.md).
-
 This is an experimental adaptation of [Visual Anagrams](https://dangeng.github.io/visual_anagrams/) by Daniel Geng, Aaron Park and Andrew Owens. Iris has different training and sampling behavior from DeepFloyd; illusion quality needs experimentation with prompts, guidance and seeds.
 
 ## Windows setup
