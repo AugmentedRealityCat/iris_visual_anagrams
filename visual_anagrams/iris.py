@@ -206,7 +206,7 @@ def encode_prompts(cfg, prompts, negative_prompt="", device="cuda", text_encoder
 def sample_iris(
     model, positive, negative, views, *, size=1024, num_inference_steps=30,
     guidance_scale=3.0, reduction="auto", generator=None, device="cuda",
-    shift=4.0, order=2, num_train_timesteps=1000, prediction="v", progress=True,
+    shift=4.0, order=2, num_train_timesteps=1000, prediction="v", progress=True, prediction_mixer=None,
 ):
     """Align per-view predictions and integrate one shared RGB image.
 
@@ -224,6 +224,8 @@ def sample_iris(
     from visual_anagrams.composition import resolve_reduction
 
     reduction = resolve_reduction(reduction, views)
+    if prediction_mixer is not None and reduction != "mean":
+        raise ValueError("Adaptive balancing requires Mean/Auto geometric views")
     if num_inference_steps < 1 or order not in (1, 2):
         raise ValueError("Use at least one step and solver order 1 or 2")
     if not math.isfinite(shift) or shift <= 0 or not math.isfinite(guidance_scale):
@@ -242,6 +244,7 @@ def sample_iris(
         nonlocal step
         indices = [step % num_views] if reduction == "alternate" else range(num_views)
         combined = torch.zeros_like(x)
+        predictions = [] if prediction_mixer is not None else None
         for index in indices:
             view = views[index]
             viewed = view.view(x[0].clone()).unsqueeze(0).to(dtype)
@@ -252,8 +255,13 @@ def sample_iris(
             if guidance_scale != 1.0 and 0 < float(t_model[0]) < num_train_timesteps:
                 uncond = model(viewed, t_model, negative.embeddings, y_mask=negative.mask).x.float()
                 predicted = uncond + guidance_scale * (predicted - uncond)
-            combined += view.inverse_view(predicted[0]).unsqueeze(0)
-        if reduction == "mean":
+            aligned = view.inverse_view(predicted[0]).unsqueeze(0)
+            combined += aligned
+            if predictions is not None:
+                predictions.append(aligned)
+        if prediction_mixer is not None:
+            combined = prediction_mixer(x, predictions, float(t_model[0]) / num_train_timesteps, step)
+        elif reduction == "mean":
             combined /= num_views
         if not torch.isfinite(combined).all():
             raise FloatingPointError("Iris produced non-finite predictions")

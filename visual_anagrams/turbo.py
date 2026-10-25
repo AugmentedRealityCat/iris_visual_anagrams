@@ -119,7 +119,7 @@ def apply_turbo_lora(model, path):
 @torch.inference_mode()
 def sample_turbo(
     model, positive, views, *, size=1024, num_inference_steps=4,
-    reduction="auto", generator=None, device="cuda", shift=4.0, progress=True,
+    reduction="auto", generator=None, device="cuda", shift=4.0, progress=True, prediction_mixer=None,
 ):
     """Predict aligned velocities, then re-noise one shared clean-image estimate.
 
@@ -134,6 +134,8 @@ def sample_turbo(
     from visual_anagrams.composition import resolve_reduction
 
     reduction = resolve_reduction(reduction, views)
+    if prediction_mixer is not None and reduction != "mean":
+        raise ValueError("Adaptive balancing requires Mean/Auto geometric views")
     if num_inference_steps < 1 or not math.isfinite(shift) or shift <= 0:
         raise ValueError("Turbo needs positive steps and a positive finite shift")
     from .iris import image_dimensions
@@ -150,13 +152,19 @@ def sample_turbo(
         for step, time in enumerate(tqdm(times, desc="Iris multi-view denoising", disable=not progress)):
             t_model = torch.full((1,), time, device=device) * 1000.0
             combined = torch.zeros_like(image)
+            predictions = [] if prediction_mixer is not None else None
             indices = [step % count] if reduction == "alternate" else range(count)
             for index in indices:
                 view = views[index]
                 viewed = view.view(image[0].clone()).unsqueeze(0).to(dtype)
                 predicted = model(viewed, t_model, embeddings[index:index + 1], y_mask=mask[index:index + 1]).x.float()
-                combined += view.inverse_view(predicted[0]).unsqueeze(0)
-            if reduction == "mean":
+                aligned = view.inverse_view(predicted[0]).unsqueeze(0)
+                combined += aligned
+                if predictions is not None:
+                    predictions.append(aligned)
+            if prediction_mixer is not None:
+                combined = prediction_mixer(image, predictions, float(t_model[0]) / 1000, step)
+            elif reduction == "mean":
                 combined /= count
             clean = image - time * combined
             if not torch.isfinite(clean).all():

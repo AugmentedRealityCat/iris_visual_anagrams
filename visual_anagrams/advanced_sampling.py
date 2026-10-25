@@ -101,8 +101,8 @@ def sample_advanced(model, positive, negative, views, *, options, prompts=None, 
     from .iris import PromptEncoding
 
     options.validate(views, reduction=resolve_reduction("auto", views), steps=num_inference_steps)
-    if options.method == "plain":
-        raise ValueError("Use sample_iris for the Classic method")
+    if options.method not in ("anagram_mtl", "syncvc"):
+        raise ValueError("This sampler only handles Anagram-MTL and SyncVC; use the normal sampler for Classic/adaptive")
     if positive.embeddings.shape[0] != 2 or negative is None:
         raise ValueError("Advanced methods require two prompt encodings and a negative encoding")
     if options.method == "anagram_mtl" and (not subject_positions or len(subject_positions) != 2):

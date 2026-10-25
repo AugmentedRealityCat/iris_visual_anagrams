@@ -19,7 +19,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
 from PIL import Image, ImageTk
-from visual_anagrams.method_options import QUALITY_METHODS, MethodOptions
+from visual_anagrams.method_options import QUALITY_METHODS, MethodOptions, default_quality_method
 from visual_anagrams.theme import DARK, LIGHT, load_preferences, preferences_path, save_theme, style_log_scrollbar
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -155,12 +155,17 @@ def build_command(settings, rows, *, python=None, root=ROOT):
     from visual_anagrams.composition import resolve_reduction
 
     reduction = resolve_reduction(settings["reduction"], view_names, view_args)
-    method_label = settings.get("quality_method", "Classic (default)")
+    method_label = settings.get("quality_method", "Classic")
+    if method_label == "Classic (default)":  # older saved form dictionaries
+        method_label = "Classic"
     if method_label not in QUALITY_METHODS:
         raise ValueError("Choose a valid quality method")
     method = QUALITY_METHODS[method_label]
-    method_args = []
-    if method != "plain":
+    method_args = ["--quality_method", "plain"]
+    if method == "adaptive":
+        MethodOptions(method).validate(view_names, turbo=bool(adapter), reduction=reduction, steps=integers["steps"])
+        method_args = ["--quality_method", "adaptive"]
+    elif method != "plain":
         try:
             strength = settings.get("method_strength", "").strip()
             options = MethodOptions(method, int(settings.get("optimization_interval", "5")),
@@ -294,6 +299,8 @@ class ViewRow:
         else:
             self.arg_entry.grid_remove()
         self.hint.configure(text=VIEW_HINTS.get(key, ""))
+        if hasattr(self, "on_change"):
+            self.on_change()
 
     def values(self):
         return {"prompt": self.prompt.get("1.0", "end").strip(),
@@ -326,21 +333,23 @@ class AnagramApp(tk.Tk):
         self.output_dir = None
         self.images = []
         self.rows = []
+        self._quality_ready = False
         self.log_buffer = ""
         self.current_sample = 1
         self.form = {key: tk.StringVar(value=value) for key, value in {
             "name": "iris-illusion", "output": str(ROOT / "results"), "style": "an oil painting of",
             "negative": "", "steps": "30", "samples": "1", "guidance": "3.0", "seed": "0",
-            "reduction": "auto", "shift": "4.0", "order": "2", "device": "cuda",
+            "reduction": "auto", "shift": "8.0", "order": "2", "device": "cuda",
             "text_device": "cuda", "model_path": "", "text_path": "",
             "mode": "Standard Iris",
-            "quality_method": "Classic (default)", "optimization_interval": "5", "optimization_steps": "1",
+            "quality_method": "Adaptive balancing (experimental)", "optimization_interval": "5", "optimization_steps": "1",
             "method_strength": "0.05", "subjects": "",
             "animation_auto": "no", "animation_format": "MP4 video", "animation_fps": "24",
             "animation_size": "768", "animation_transition": "1.5", "animation_hold": "1.0",
             "animation_loop": "yes", "labels": "no", "animation_borderless": "no",
         }.items()}
         self.standard_settings = None
+        self.turbo_quality_method = None
         self._styles()
         appearance = ttk.Frame(self, padding=(20, 6, 20, 2))
         appearance.pack(fill="x")
@@ -360,6 +369,7 @@ class AnagramApp(tk.Tk):
         self.mode_changed()
         self.add_view("a snowy mountain village", "Original")
         self.add_view("a horse", "Rotate 90° right")
+        self._quality_ready = True
         self.apply_theme(save=False)
         self.after(100, self.poll)
 
@@ -522,7 +532,9 @@ class AnagramApp(tk.Tk):
         self.negative_entry = ttk.Entry(settings, textvariable=self.form["negative"])
         self.negative_entry.grid(row=9, column=0, columnspan=2, sticky="ew", pady=(4, 10))
         ttk.Label(settings, text="Combine views").grid(row=10, column=0, sticky="w")
-        ttk.Combobox(settings, textvariable=self.form["reduction"], values=["auto", "mean", "alternate", "sum"], state="readonly", width=16).grid(row=10, column=1, sticky="ew")
+        self.reduction_combo = ttk.Combobox(settings, textvariable=self.form["reduction"], values=["auto", "mean", "alternate", "sum"], state="readonly", width=16)
+        self.reduction_combo.grid(row=10, column=1, sticky="ew")
+        self.reduction_combo.bind("<<ComboboxSelected>>", self._views_changed)
 
         quality = self._card(self.controls, "QUALITY METHOD")
         quality.columnconfigure(0, weight=1)
@@ -643,19 +655,33 @@ class AnagramApp(tk.Tk):
         turbo = GENERATION_MODES[self.form["mode"].get()] is not None
         if turbo and self.standard_settings is None:
             self.standard_settings = {key: self.form[key].get() for key in ("steps", "guidance", "negative", "shift", "quality_method")}
-            for key, value in {"steps": "4", "guidance": "1.0", "negative": "", "shift": "4.0", "quality_method": "Classic (default)"}.items():
+            from visual_anagrams.composition import resolve_reduction
+
+            view_rows = [row.values() for row in self.rows]
+            names = [row["view"] for row in view_rows]
+            try:
+                reduction = resolve_reduction(self.form["reduction"].get(), names, [row["argument"] for row in view_rows])
+            except ValueError:
+                reduction = "sum"
+            default_method = default_quality_method(turbo=True, views=names, reduction=reduction)
+            default_label = next(label for label, method in QUALITY_METHODS.items() if method == default_method)
+            turbo_quality = self.turbo_quality_method or default_label
+            for key, value in {"steps": "4", "guidance": "1.0", "negative": "", "shift": "8.0", "quality_method": turbo_quality}.items():
                 self.form[key].set(value)
         elif not turbo and self.standard_settings is not None:
+            self.turbo_quality_method = self.form["quality_method"].get()
             for key, value in self.standard_settings.items():
                 self.form[key].set(value)
             self.standard_settings = None
         self.guidance_entry.configure(state="disabled" if turbo else "normal")
         self.negative_entry.configure(state="disabled" if turbo else "normal")
         self.order_combo.configure(state="disabled" if turbo else "readonly")
-        self.mode_hint.configure(text=("Fast previews: 4 steps with built-in guidance. Try 8 steps as an experiment."
-                                       if turbo else "Recommended starting point: 30 steps, guidance 3, Auto combining."))
-        self.quality_combo.configure(state="disabled" if turbo else "readonly")
+        self.mode_hint.configure(text=("4 steps, built-in guidance, shift 8. Two geometric views use adaptive balancing by default."
+                                       if turbo else "Defaults: 30 steps, guidance 3, shift 8, adaptive balancing for two geometric views."))
+        self.quality_combo.configure(state="readonly", values=[label for label, method in QUALITY_METHODS.items()
+                                      if not turbo or method in ("plain", "adaptive")])
         self.quality_changed()
+        self._views_changed()
 
     def quality_changed(self, _event=None):
         method = QUALITY_METHODS[self.form["quality_method"].get()]
@@ -668,18 +694,19 @@ class AnagramApp(tk.Tk):
             pass
         self.previous_quality_method = method
         turbo = GENERATION_MODES[self.form["mode"].get()] is not None
-        hints = {"plain": "Classic view averaging. Experimental methods require Standard Iris and two geometric views.",
+        hints = {"plain": "Classic view averaging. Adaptive balancing also supports Turbo; MTL and SyncVC require Standard Iris.",
+                 "adaptive": "Scores clean previews with CPU CLIP every two steps and gives weaker views more weight. Standard or Turbo; two geometric views.",
                  "anagram_mtl": "Balances views and encourages subject attention to overlap. Uses CPU CLIP and gradient optimization.",
                  "syncvc": "Optimizes agreement between two image trajectories. Uses a flow Euler solver and gradient optimization."}
         self.quality_hint.configure(text=hints[method])
         for index, (label, entry) in enumerate(zip(self.method_labels, self.method_entries)):
-            if method == "plain" or turbo:
+            if method in ("plain", "adaptive") or turbo:
                 label.grid_remove()
                 entry.grid_remove()
             else:
                 label.grid()
                 entry.grid()
-            entry.configure(state="disabled" if method == "plain" or turbo or (index == 3 and method != "anagram_mtl") else "normal")
+            entry.configure(state="disabled" if method in ("plain", "adaptive") or turbo or (index == 3 and method != "anagram_mtl") else "normal")
         self.order_combo.configure(state="disabled" if turbo or method == "syncvc" else "readonly")
 
     def _entry(self, parent, label, key, row):
@@ -705,8 +732,10 @@ class AnagramApp(tk.Tk):
 
     def add_view(self, prompt="", label="Original"):
         row = ViewRow(self.view_frame, len(self.rows) + 1, self.remove_view, prompt, label, self.colors)
+        row.on_change = self._views_changed
         self.rows.append(row)
         row.frame.pack(fill="x", pady=(0, 10))
+        self._views_changed()
 
     def remove_view(self, row):
         if len(self.rows) == 1:
@@ -715,6 +744,22 @@ class AnagramApp(tk.Tk):
         row.frame.destroy()
         for index, remaining in enumerate(self.rows, start=1):
             remaining.title.configure(text=f"VIEW {index}")
+        self._views_changed()
+
+    def _views_changed(self, _event=None):
+        if not self._quality_ready or QUALITY_METHODS[self.form["quality_method"].get()] != "adaptive":
+            return
+        from visual_anagrams.composition import resolve_reduction
+
+        rows = [row.values() for row in self.rows]
+        try:
+            reduction = resolve_reduction(self.form["reduction"].get(), [row["view"] for row in rows],
+                                          [row["argument"] for row in rows])
+        except ValueError:
+            reduction = "sum"
+        if len(rows) != 2 or reduction != "mean":
+            self.form["quality_method"].set("Classic")
+            self.quality_changed()
 
     def browse(self, key):
         path = filedialog.askdirectory(parent=self, title="Choose folder")
