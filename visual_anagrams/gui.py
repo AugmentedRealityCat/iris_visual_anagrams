@@ -20,6 +20,8 @@ from tkinter import filedialog, messagebox, scrolledtext, ttk
 
 from PIL import Image, ImageTk
 from visual_anagrams.method_options import QUALITY_METHODS, MethodOptions, default_quality_method
+from visual_anagrams.experiment_options import GUI_DEFAULTS, NEGATIVE_MODES, options_from_gui, context_options, gui_values
+from visual_anagrams.styles import SHARED_STYLES
 from visual_anagrams.theme import DARK, LIGHT, load_preferences, preferences_path, save_theme, style_log_scrollbar
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -194,6 +196,15 @@ def build_command(settings, rows, *, python=None, root=ROOT):
                "--reduction", reduction, "--device", settings["device"],
                "--text_encoder_device", settings["text_device"]]
     command.extend(method_args)
+    experiments=options_from_gui(settings,context_options(turbo=bool(adapter),views=view_names,reduction=reduction,quality_method=method))
+    experiments.validate(view_names,reduction=reduction,turbo=bool(adapter),quality_method=method)
+    command.extend(experiments.cli_args(explicit=True))
+    if experiments.cross_negative=='qwen':command.append('--negative_fallback')
+    if experiments.cross_negative == 'manual':
+        negatives=[p.strip() for p in settings.get('exp_manual_negatives','').split('|')]
+        if len(negatives) != len(rows) or any(not p for p in negatives):
+            raise ValueError('Enter one nonempty negative per view, separated by |')
+        command += ['--view_negative_prompts',*negatives]
     if adapter:
         command.extend(["--turbo", "--turbo_adapter", adapter])
     else:
@@ -333,10 +344,13 @@ class AnagramApp(tk.Tk):
         self.output_dir = None
         self.images = []
         self.rows = []
+        self._experiment_context=None
+        self._experiment_profiles={}
         self._quality_ready = False
         self.log_buffer = ""
         self.current_sample = 1
         self.form = {key: tk.StringVar(value=value) for key, value in {
+            **GUI_DEFAULTS,
             "name": "iris-illusion", "output": str(ROOT / "results"), "style": "an oil painting of",
             "negative": "", "steps": "30", "samples": "1", "guidance": "3.0", "seed": "0",
             "reduction": "auto", "shift": "8.0", "order": "2", "device": "cuda",
@@ -370,6 +384,7 @@ class AnagramApp(tk.Tk):
         self.add_view("a snowy mountain village", "Original")
         self.add_view("a horse", "Rotate 90° right")
         self._quality_ready = True
+        self._update_experiments()
         self.apply_theme(save=False)
         self.after(100, self.poll)
 
@@ -520,7 +535,7 @@ class AnagramApp(tk.Tk):
         self.mode_hint = ttk.Label(mode_frame, text="Standard sampling with adjustable guidance.", style="Hint.TLabel", wraplength=round(380 * self.ui_scale))
         self.mode_hint.grid(row=2, column=0, sticky="w")
         ttk.Label(settings, text="Shared style").grid(row=2, column=0, columnspan=2, sticky="w")
-        ttk.Combobox(settings, textvariable=self.form["style"], values=["an oil painting of", "a pencil sketch of", "a watercolor painting of", "a lithograph of", "a photo of", ""]).grid(row=3, column=0, columnspan=2, sticky="ew", pady=(4, 10))
+        ttk.Combobox(settings, textvariable=self.form["style"], values=SHARED_STYLES,height=16).grid(row=3, column=0, columnspan=2, sticky="ew", pady=(4, 10))
         for index, (key, label) in enumerate((("steps", "Steps"), ("guidance", "Guidance"), ("samples", "Samples"), ("seed", "Seed"))):
             row, col = 4 + (index // 2) * 2, index % 2
             ttk.Label(settings, text=label).grid(row=row, column=col, sticky="w", padx=(0, 8))
@@ -557,6 +572,7 @@ class AnagramApp(tk.Tk):
             self.method_entries.append(entry)
             self.method_labels.append(field_label)
 
+        self._experiment_panel()
         output = self._card(self.controls, "SAVE RESULTS")
         output.columnconfigure(0, weight=1)
         self._entry(output, "Run name", "name", 1)
@@ -652,9 +668,12 @@ class AnagramApp(tk.Tk):
         return frame
 
     def mode_changed(self, _event=None):
+        if self._experiment_context is not None:
+            self._experiment_profiles[self._experiment_context]={key:self.form[key].get() for key in GUI_DEFAULTS}
+        self._mode_experiment_transition=True
         turbo = GENERATION_MODES[self.form["mode"].get()] is not None
         if turbo and self.standard_settings is None:
-            self.standard_settings = {key: self.form[key].get() for key in ("steps", "guidance", "negative", "shift", "quality_method")}
+            self.standard_settings = {key: self.form[key].get() for key in ("steps", "guidance", "negative", "shift", "quality_method", *GUI_DEFAULTS)}
             from visual_anagrams.composition import resolve_reduction
 
             view_rows = [row.values() for row in self.rows]
@@ -682,6 +701,7 @@ class AnagramApp(tk.Tk):
                                       if not turbo or method in ("plain", "adaptive")])
         self.quality_changed()
         self._views_changed()
+        self._mode_experiment_transition=False
 
     def quality_changed(self, _event=None):
         method = QUALITY_METHODS[self.form["quality_method"].get()]
@@ -708,6 +728,94 @@ class AnagramApp(tk.Tk):
                 entry.grid()
             entry.configure(state="disabled" if method in ("plain", "adaptive") or turbo or (index == 3 and method != "anagram_mtl") else "normal")
         self.order_combo.configure(state="disabled" if turbo or method == "syncvc" else "readonly")
+        self._update_experiments()
+
+    def _experiment_panel(self):
+        panel=self._card(self.controls,'QUALITY EXPERIMENTS')
+        panel.columnconfigure(0,weight=1)
+        self.experiment_widgets={}
+        def check(row,text,key,onvalue='yes',offvalue='no'):
+            widget=ttk.Checkbutton(panel,text=text,variable=self.form[key],onvalue=onvalue,offvalue=offvalue,
+                command=self._update_experiments)
+            widget.grid(row=row,column=0,sticky='w',pady=5)
+            self.experiment_widgets[key]=widget
+        check(1,'Contrastive adaptive balancing','exp_contrastive')
+        ttk.Label(panel,text='Cross-view negative prompts').grid(row=2,column=0,sticky='w',pady=(7,3))
+        combo=ttk.Combobox(panel,textvariable=self.form['exp_negative'],values=list(NEGATIVE_MODES),state='readonly')
+        combo.grid(row=3,column=0,sticky='ew')
+        combo.bind('<<ComboboxSelected>>',self._update_experiments)
+        self.experiment_widgets['exp_negative']=combo
+        self.manual_negative_label=ttk.Label(panel,text='Manual negatives: view 1 | view 2',style='Hint.TLabel')
+        self.manual_negative_label.grid(row=4,column=0,sticky='w',pady=(6,2))
+        self.manual_negative_entry=ttk.Entry(panel,textvariable=self.form['exp_manual_negatives'])
+        self.manual_negative_entry.grid(row=5,column=0,sticky='ew',pady=(0,5))
+        check(6,'Adaptive component guidance','exp_component')
+        check(7,'Schedule CFG in middle noise levels','exp_schedule','middle','constant')
+        check(8,'Conflict-aware prompt directions','exp_conflict')
+        self.experiment_hint=ttk.Label(panel,style='Hint.TLabel',wraplength=round(370*self.ui_scale))
+        self.experiment_hint.grid(row=9,column=0,sticky='w',pady=6)
+        details=ttk.Frame(panel,style='Card.TFrame')
+        details.grid(row=11,column=0,sticky='ew')
+        details.columnconfigure(0,weight=1)
+        def toggle():
+            if details.winfo_manager():details.grid_remove()
+            else:details.grid()
+        ttk.Button(panel,text='Show / hide experiment parameters',style='Small.TButton',command=toggle).grid(row=10,column=0,sticky='ew',pady=5)
+        for row,(key,label) in enumerate([
+            ('exp_cross_strength','Cross-negative strength (0–1)'),
+            ('exp_low','CFG lower noise bound'),('exp_high','CFG upper noise bound'),
+            ('exp_ramp','CFG smooth ramp width'),('exp_conflict_strength','Conflict projection strength (0–1)'),
+            ('exp_freeze','Freeze balancing below noise (0 = off)')]):
+            ttk.Label(details,text=label).grid(row=row*2,column=0,sticky='w',pady=(5,0))
+            entry=ttk.Entry(details,textvariable=self.form[key])
+            entry.grid(row=row*2+1,column=0,sticky='ew',pady=(3,5))
+            self.experiment_widgets[key]=entry
+        details.grid_remove()
+
+    def _update_experiments(self,_event=None):
+        if not hasattr(self,'experiment_widgets'):return
+        from visual_anagrams.composition import resolve_reduction
+        rows=[row.values() for row in self.rows]
+        names=[row['view'] for row in rows]
+        try:reduction=resolve_reduction(self.form['reduction'].get(),names,[row['argument'] for row in rows])
+        except ValueError:reduction=None
+        method=QUALITY_METHODS[self.form['quality_method'].get()]
+        ordinary=method in ('plain','adaptive')
+        standard=GENERATION_MODES[self.form['mode'].get()] is None
+        context=(standard,tuple(names),reduction,method)
+        if context!=self._experiment_context:
+            if self._experiment_context is not None and not getattr(self,'_mode_experiment_transition',False):
+                self._experiment_profiles[self._experiment_context]={key:self.form[key].get() for key in GUI_DEFAULTS}
+            defaults=gui_values(context_options(turbo=not standard,views=names,reduction=reduction,quality_method=method))
+            chosen=self._experiment_profiles.get(context,defaults)
+            for key,value in chosen.items():self.form[key].set(value)
+            self._experiment_context=context
+        geometric=len(names)==2 and reduction=='mean'
+        component=(reduction=='sum' and len(names)==2 and all(n in
+            ('low_pass','high_pass','grayscale','color','motion','motion_res') for n in names))
+        allowed=dict(exp_contrastive=ordinary and geometric and method=='adaptive',
+            exp_negative=ordinary and standard and geometric,exp_component=ordinary and standard and component and method=='plain',
+            exp_schedule=ordinary and standard,exp_conflict=ordinary and standard and geometric)
+        for key,enabled in allowed.items():
+            if not enabled:self.form[key].set(GUI_DEFAULTS[key])
+            self.experiment_widgets[key].configure(state=('readonly' if key=='exp_negative' else 'normal') if enabled else 'disabled')
+        manual=self.form['exp_negative'].get()=='Manual per-view negatives'
+        for widget in (self.manual_negative_label,self.manual_negative_entry):
+            if manual:widget.grid()
+            else:widget.grid_remove()
+        states=dict(exp_cross_strength=allowed['exp_negative'] and self.form['exp_negative'].get()!='Off',
+            exp_low=allowed['exp_schedule'] and self.form['exp_schedule'].get()=='middle',
+            exp_high=allowed['exp_schedule'] and self.form['exp_schedule'].get()=='middle',
+            exp_ramp=allowed['exp_schedule'] and self.form['exp_schedule'].get()=='middle',
+            exp_conflict_strength=allowed['exp_conflict'] and self.form['exp_conflict'].get()=='yes',
+            exp_freeze=ordinary and (method=='adaptive' or self.form['exp_component'].get()=='yes'))
+        for key,enabled in states.items():self.experiment_widgets[key].configure(state='normal' if enabled else 'disabled')
+        if not states['exp_freeze']:self.form['exp_freeze'].set('0')
+        hint=('Select Classic or Adaptive to use these experiments.' if not ordinary else
+              'Turbo supports contrastive balancing and balance freeze; the other experiments require Standard.' if not standard else
+              'Component guidance adapts prompt strength while preserving Sum. Geometric-only controls are disabled.' if component else
+              'Options follow the tested profile and can be overridden. Contrastive needs Adaptive. Qwen cross negatives add about 50% sampling work at strength 0.5; plans are logged and saved.')
+        self.experiment_hint.configure(text=hint)
 
     def _entry(self, parent, label, key, row):
         ttk.Label(parent, text=label).grid(row=row, column=0, columnspan=2, sticky="w")
@@ -747,7 +855,7 @@ class AnagramApp(tk.Tk):
         self._views_changed()
 
     def _views_changed(self, _event=None):
-        if not self._quality_ready or QUALITY_METHODS[self.form["quality_method"].get()] != "adaptive":
+        if not self._quality_ready:
             return
         from visual_anagrams.composition import resolve_reduction
 
@@ -757,9 +865,10 @@ class AnagramApp(tk.Tk):
                                           [row["argument"] for row in rows])
         except ValueError:
             reduction = "sum"
-        if len(rows) != 2 or reduction != "mean":
+        if QUALITY_METHODS[self.form['quality_method'].get()]=='adaptive' and (len(rows) != 2 or reduction != "mean"):
             self.form["quality_method"].set("Classic")
             self.quality_changed()
+        self._update_experiments()
 
     def browse(self, key):
         path = filedialog.askdirectory(parent=self, title="Choose folder")

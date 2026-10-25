@@ -171,7 +171,8 @@ def image_dimensions(size, patch):
 
 
 @torch.inference_mode()
-def encode_prompts(cfg, prompts, negative_prompt="", device="cuda", text_encoder_path=None, *, encode_negative=True):
+def encode_prompts(cfg, prompts, negative_prompt="", device="cuda", text_encoder_path=None, *, encode_negative=True,
+                   negative_request=None):
     """Encode one prompt at a time; release Qwen before loading Iris on GPU."""
     from huggingface_hub import snapshot_download
     from iris3b.text.qwen3_vl import Qwen3VLTextEncoder
@@ -184,8 +185,15 @@ def encode_prompts(cfg, prompts, negative_prompt="", device="cuda", text_encoder
     encoder = Qwen3VLTextEncoder(cfg.text_encoder, device="cpu")
     try:
         encoder.to(device)
+        if negative_request is not None:
+            if not encode_negative:raise ValueError('Cross-view negatives require Standard Iris')
+            from .negative_planner import plan_negatives
+            negative_request.result = plan_negatives(negative_request.prompts,negative_request.mode,
+                encoder=encoder,manual=negative_request.manual,style=negative_request.style)
+            print('Per-view negative plan: '+json.dumps(negative_request.result,ensure_ascii=False),flush=True)
         encodings = []
-        texts = [*prompts, negative_prompt] if encode_negative else prompts
+        texts = [*prompts, negative_prompt] if encode_negative else list(prompts)
+        if negative_request is not None:texts += negative_request.result['view_negative_prompts']
         for prompt in tqdm(texts, desc="Encoding prompts"):
             # Avoid upstream null-cache filenames containing absolute Windows paths.
             value = encoder.encode([prompt])
@@ -194,7 +202,10 @@ def encode_prompts(cfg, prompts, negative_prompt="", device="cuda", text_encoder
             torch.cat([value.embeddings for value in encodings[:len(prompts)]]),
             torch.cat([value.mask for value in encodings[:len(prompts)]]),
         )
-        return positive, encodings[-1] if encode_negative else None
+        if negative_request is not None:
+            negative_request.encoding=PromptEncoding(torch.cat([e.embeddings for e in encodings[len(prompts)+1:]]),
+                torch.cat([e.mask for e in encodings[len(prompts)+1:]]))
+        return positive, encodings[len(prompts)] if encode_negative else None
     finally:
         del encoder
         gc.collect()
@@ -207,6 +218,7 @@ def sample_iris(
     model, positive, negative, views, *, size=1024, num_inference_steps=30,
     guidance_scale=3.0, reduction="auto", generator=None, device="cuda",
     shift=4.0, order=2, num_train_timesteps=1000, prediction="v", progress=True, prediction_mixer=None,
+    experiments=None, view_negative=None, component_scorer=None, experiment_diagnostics=None,
 ):
     """Align per-view predictions and integrate one shared RGB image.
 
@@ -224,6 +236,23 @@ def sample_iris(
     from visual_anagrams.composition import resolve_reduction
 
     reduction = resolve_reduction(reduction, views)
+    experimental = None
+    if experiments is not None:
+        experiments.validate(views,reduction=reduction,quality_method='adaptive' if prediction_mixer is not None else 'plain')
+        if experiments.enabled:
+            if prediction != 'v':raise ValueError('New quality experiments require velocity prediction')
+            from .quality_experiments import ExperimentalFlow
+            experimental=ExperimentalFlow(experiments,views,reduction,guidance_scale,component_scorer)
+            if experiments.contrastive or experiments.freeze_below:
+                if prediction_mixer is not None:
+                    from .balancing import AdaptiveBalancer
+                    if not isinstance(prediction_mixer,AdaptiveBalancer):
+                        raise ValueError('Contrastive/freeze options require the AdaptiveBalancer')
+                    prediction_mixer.contrastive=experiments.contrastive
+                    prediction_mixer.freeze_below=experiments.freeze_below
+            if experiments.cross_negative != 'off':
+                if view_negative is None or view_negative.embeddings.shape[0] != num_views or view_negative.mask.shape[0] != num_views:
+                    raise ValueError('Cross-view negative encodings must match the number of views')
     if prediction_mixer is not None and reduction != "mean":
         raise ValueError("Adaptive balancing requires Mean/Auto geometric views")
     if num_inference_steps < 1 or order not in (1, 2):
@@ -235,6 +264,7 @@ def sample_iris(
     device = torch.device(device)
     positive = PromptEncoding(positive.embeddings.to(device), positive.mask.to(device))
     negative = PromptEncoding(negative.embeddings.to(device), negative.mask.to(device))
+    if view_negative is not None:view_negative=PromptEncoding(view_negative.embeddings.to(device),view_negative.mask.to(device))
     dtype = next(model.parameters()).dtype
     noise = torch.randn((1, model.cfg.in_channels, height, width), generator=generator, device=device, dtype=torch.float32)
     step = 0
@@ -242,6 +272,11 @@ def sample_iris(
 
     def model_fn(x, t_model, _conditioning):
         nonlocal step
+        if experimental is not None:
+            combined=experimental.predict(model,x,t_model,positive,negative,view_negative,prediction_mixer,step,num_train_timesteps)
+            step+=1
+            bar.update(1)
+            return combined
         indices = [step % num_views] if reduction == "alternate" else range(num_views)
         combined = torch.zeros_like(x)
         predictions = [] if prediction_mixer is not None else None
@@ -284,3 +319,5 @@ def sample_iris(
         return result.clamp(-1, 1)
     finally:
         bar.close()
+        if experimental is not None and experiment_diagnostics is not None:
+            experiment_diagnostics.update(experimental.diagnostics())
