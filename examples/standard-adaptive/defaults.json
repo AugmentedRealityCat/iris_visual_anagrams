@@ -1,0 +1,27 @@
+{
+  "standard": {
+    "steps": 30,
+    "guidance": 3,
+    "shift": 8,
+    "solver_order": 2,
+    "reduction": "auto",
+    "quality": "adaptive"
+  },
+  "turbo": {
+    "adapter": "r2-1000",
+    "steps": 4,
+    "guidance": 1,
+    "shift": 8,
+    "quality": "adaptive"
+  },
+  "adaptive_eligibility": "two geometric Mean/Auto views",
+  "other_configurations_quality": "plain",
+  "regression": "175 passed in 20.07s",
+  "gui_cli_and_fallbacks_verified": true,
+  "evidence": "Best weaker-view alignment among the tested Standard configurations; one pair and seed.",
+  "source_sha256": {
+    "generate.py": "0bfa15363e3b89e7d1267b8977eb1de4bb49543c3b88fbce723509f3850b981a",
+    "visual_anagrams/gui.py": "5b153fe44e229b11552209b19df3c8f5fb159d7b96f54e1b1d92475088dfe334",
+    "visual_anagrams/method_options.py": "0483d0e65ae9e2b1d100b12769138263f85ddfa0e441566be04be146a125c4b4"
+  }
+}

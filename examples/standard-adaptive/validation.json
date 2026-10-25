@@ -1,0 +1,47 @@
+{
+  "new_adaptive_images": 2,
+  "reused_classic_images": 2,
+  "total_new_standard_images_this_check": 4,
+  "seed": 0,
+  "steps": 30,
+  "guidance": 3,
+  "lora_layers": 0,
+  "shifts": [
+    4,
+    8
+  ],
+  "baseline_hashes_and_scores_preserved": true,
+  "finite_scores_and_image_hashes_verified": true,
+  "weight_updates_verified": true,
+  "paired_results": [
+    {
+      "shift": 4.0,
+      "classic": 0.23884068429470062,
+      "adaptive": 0.24960410594940186,
+      "relative_gain_percent": 4.506527724322074,
+      "extra_seconds": 17.467745300382376
+    },
+    {
+      "shift": 8.0,
+      "classic": 0.2552339732646942,
+      "adaptive": 0.26311665773391724,
+      "relative_gain_percent": 3.0884150602663585,
+      "extra_seconds": 18.36860489938408
+    }
+  ],
+  "video": {
+    "size": [
+      1024,
+      1120
+    ],
+    "fps": 24.0,
+    "duration_seconds": 5.0,
+    "bytes": 2860466
+  },
+  "source_sha256": {
+    "scripts/benchmark_standard_adaptive.py": "3c2b8d01cf1dca4de01a4c4410e471afb9b32e8d67d5d7b6adb5327fabe33e03",
+    "scripts/benchmark_standard_flow_shift.py": "cc571ec09948b0a3e72f63285827026f417add422687b7e1dd4a6524fbb6e148",
+    "visual_anagrams/iris.py": "b38bff49a165f944169845525451ffeb5c9385a36ea763e9e93ba5c179ef2c85",
+    "visual_anagrams/balancing.py": "f0c469fda5af8f15caa218c6a5d6fac569b92708b8c53140f8b34bbf2ff5a46e"
+  }
+}
