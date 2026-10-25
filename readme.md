@@ -1,5 +1,8 @@
 ﻿# Visual Anagrams with Iris 3B INT8
-<img width="3829" height="2064" alt="GUI_VA" src="https://github.com/user-attachments/assets/dbf59f67-5bd2-447f-aa4f-22a1d825c378" />
+
+
+
+<img width="3823" height="2051" alt="GUI_VA" src="https://github.com/user-attachments/assets/0818f5c2-ac48-43e1-b737-6658daedcde0" />
 
 
 `generate.py` now uses [Aikimi/iris-3b-int8](https://huggingface.co/Aikimi/iris-3b-int8), replacing DeepFloyd IF's two-stage generation with one **1024 x 1024 pixel-space** generation pass. Every denoising step predicts each prompted view, applies its inverse transformation, and combines the aligned predictions. There is no VAE or separate upscaler in this path.
@@ -18,7 +21,7 @@ two geometric Auto/Mean views. Component groups and other view counts use Classi
 
 ## Example gallery and showcase
 
-[**Extended twelve-method showcase: showcase4.mp4**](examples/showcase-v3/showcase4.mp4)
+https://github.com/user-attachments/assets/49d2e602-4bef-40a6-b81d-c5f48c77cda7
 
 The extended video adds **jigsaw, skew/warp, fine block shuffle, frequency
 hybrids, grayscale/colour components and motion blur**. The new warp and
