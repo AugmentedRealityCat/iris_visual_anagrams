@@ -141,8 +141,9 @@ def test_tools_page_builds_each_task_and_preserves_anagram_settings(tmp_path):
         page = app.tools_page
         original = {key: value.get() for key,value in app.form.items()}
         input_path = tmp_path / "input image.png"
-        Image.new("RGB", (30,18)).save(input_path)
+        Image.new("RGB", (256,192)).save(input_path)
         page.form["input"].set(str(input_path))
+        page.form['target'].set(str(input_path))
         page.form["output"].set(str(tmp_path))
         for label, task in TASKS.items():
             page.form["task"].set(label)
@@ -150,7 +151,7 @@ def test_tools_page_builds_each_task_and_preserves_anagram_settings(tmp_path):
             command, _ = build_tools_command({k:v.get() for k,v in page.form.items()})
             args = validate_args(build_parser().parse_args(command[3:]))
             assert args.task == task
-            if task in ("depth", "restore"):
+            if task not in ('generate','img2img'):
                 assert not page.fields["prompt"].grid_info()
             else:
                 assert page.fields["prompt"].grid_info()
