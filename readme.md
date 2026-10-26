@@ -1,7 +1,4 @@
 ﻿# Visual Anagrams with Iris 3B INT8
-
-
-
 <img width="3823" height="2051" alt="GUI_VA" src="https://github.com/user-attachments/assets/0818f5c2-ac48-43e1-b737-6658daedcde0" />
 
 
@@ -22,17 +19,6 @@ two geometric Auto/Mean views. Component groups and other view counts use Classi
 ## Example gallery and showcase
 
 https://github.com/user-attachments/assets/49d2e602-4bef-40a6-b81d-c5f48c77cda7
-
-The extended video adds **jigsaw, skew/warp, fine block shuffle, frequency
-hybrids, grayscale/colour components and motion blur**. The new warp and
-component examples use 30-step Standard; the two new puzzles were refined from
-four-step Turbo previews to 30-step Standard. Earlier rotation images are reused,
-with no new rotation runs.
-Component methods use Sum with Classic balancing; geometric examples use
-Mean with Adaptive balancing. [Gallery, prompts and settings](examples/showcase-v3/README.md).
-
-[![Added methods](examples/showcase-v3/new-methods.jpg)](examples/showcase-v3/README.md)
-
 
 
 This is an experimental adaptation of [Visual Anagrams](https://dangeng.github.io/visual_anagrams/) by Daniel Geng, Aaron Park and Andrew Owens. Iris has different training and sampling behavior from DeepFloyd; illusion quality needs experimentation with prompts, guidance and seeds.
@@ -116,6 +102,11 @@ task runs at a time; weights are released when its worker exits.
 | **Image-to-image (experimental)** | Add flow noise to an input, then denoise with a prompt; useful for variations and restyling | Existing generation INT8 model and Qwen; Standard only |
 | **Relative depth** | Estimate near/far structure from one image | Separate depth INT8 model; no Qwen |
 | **Restore / upscale** | Restore a low-quality image and enlarge it up to 4× | Separate restoration INT8 model; no Qwen |
+| **Depth parallax (experimental)** | Small 2.5D camera movement, exported as borderless MP4/GIF with GUI playback | Depth INT8, or cached raw depth |
+| **Video parallax (experimental)** | Apply a depth-driven camera movement to an existing video or selected clip | Depth INT8 evaluated on each output frame; optional source audio in MP4 |
+| **Magic Eye stereogram (experimental)** | Hide a predicted depth relief in random dots or an optional repeating texture | Depth INT8, or cached raw depth |
+| **Depth focus sweep (experimental)** | Animate focus across depth layers of one fixed image | Depth INT8, or cached raw depth |
+| **Colour / depth anagram (experimental)** | Edit one RGB image so its estimated depth approaches a second reference's relief | Depth INT8 with frozen-weight input gradients; no generator or Qwen |
 
 Ordinary generation, monocular depth, and restoration/upscaling are released
 Iris tasks. The depth and restoration models are task-specific fine-tunes;
@@ -178,13 +169,76 @@ Use `--text_encoder_device cpu` for generation without Qwen on the GPU.
 local Qwen folder. CLI runs get timestamped names unless `--name` is given;
 an existing CLI output folder is rejected to preserve previous results.
 
-**Checked on the RTX 3060 12 GB:** all four task paths completed. Landscape
+**Original Iris Tools check on the RTX 3060 12 GB:** all four original task paths completed. Landscape
 generation at 1344×768 took 188 seconds (30 steps), image-to-image took
 96 seconds (15 steps), and single-pass depth/restoration took about 4 seconds
 each. Peak allocated VRAM was **6.78–6.87 GiB** for these examples. Model
 loading and text encoding are excluded from those processing times.
 [Example outputs, exact settings and test limitations](examples/iris-tools/README.md).
-The regression suite passed **162 checks**.
+That earlier regression suite passed 162 checks.
+
+### Depth experiments
+
+The experimental depth tasks above are available in **Iris Tools → Task**.
+[Examples, MP4 loops and measured tradeoffs](examples/depth-lab/README.md).
+Parallax uses a depth buffer and local filling for newly exposed pixels; small
+movements work best. The focus sweep renders one fixed image with depth-dependent
+blur. It does not crossfade subjects or guarantee a second readable image.
+Magic Eye outputs use parallel viewing and include a decoded-depth diagnostic.
+The optional texture colours the repeating pattern rather than preserving an
+independently readable second portrait.
+
+The colour/depth pilot edits Joker toward a Batman depth relief. The gentler
+384-pixel trial improved same-resolution depth correlation from 0.61 to 0.92,
+while retaining visible colour artifacts. It survived JPEG and resize checks at
+that resolution; the report also includes a separate 512-pixel inference check.
+This is estimator-driven input optimization, not a trained depth-conditioned
+generator or a proven human-visible illusion. It starts at **384 pixels,
+24 iterations and RGB edit bound 0.06**. The target is centre-fitted to the input
+aspect ratio; saved pixels are rounded to 8-bit. The other anagram defaults
+remain unchanged.
+
+```powershell
+python iris_tools.py --task parallax --input batman.png --depth_formats gif mp4
+python iris_tools.py --task parallax_video --input video.mp4 --video_start 0 --video_seconds 1
+python iris_tools.py --task stereogram --input batman.png --texture joker.png
+python iris_tools.py --task focus --input hybrid.png
+python iris_tools.py --task depth_anagram --input joker.png --target batman.png
+```
+
+Parallax/focus settings include **Animation output** (MP4 video, Animated GIF,
+or GIF + MP4), render size, duration, FPS, camera movement or
+defocus radius. Stereograms expose the repeat period and random seed. Renderers
+can reuse `--depth_map path/to/depth.npy` matching the original input dimensions;
+those runs load no model weights. The optimizer exposes iteration count, work
+resolution and edit bound. It saves before/after depth, a target relief, pixel
+change measurements, per-iteration scores and JPEG/resize checks. Parallax and
+focus animations play and loop directly in the GUI's **Result** preview. Use
+**Play / Pause** to control playback; **Load result…** accepts earlier MP4s,
+GIFs and images. Loading a saved result PNG also discovers its accompanying
+animation. MP4 remains the default export. CLI users select `--depth_formats
+gif`, `mp4`, or `gif mp4`; both formats share the same render pass.
+
+**Video input:** choose **Video parallax (experimental)** and browse for an
+MP4, MOV, MKV, AVI or WebM file. **Start time** and **Clip length** select the
+part to process. Start **0**, length **1** exports only the first second;
+start **10**, length **2** selects seconds 10–12. A length of **0** processes
+the rest of the video. These times are in seconds, including fractions.
+The default output frame rate follows the source, capped at 60; select a lower
+rate for faster processing. **Camera loop** controls the added movement's
+period, independently of clip length. Output is constant-frame-rate MP4, GIF,
+or both, and plays in the GUI.
+
+**Keep source audio in MP4** preserves the selected clip's first audio track,
+re-encoded as AAC. GIFs and the embedded GUI preview are silent. **Depth
+smoothing** blends recent depth only where RGB changes are small and resets
+at detected scene cuts. Set it to 0 to disable history blending; lower values
+are preferable for fast motion. This is a heuristic using the existing
+single-image Iris depth model, not motion-compensated or video-trained depth.
+Each output frame requires inference, and large movements can expose halos or
+stretched background. A single cached `depth.npy` is not used for video input.
+Clip timing, actual frame count/FPS, depth settings and audio retention are
+recorded in `run.json`. [Short real-model check](examples/video-parallax/README.md).
 
 ### Moving images and prompt labels
 

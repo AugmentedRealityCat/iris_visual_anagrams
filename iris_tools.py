@@ -12,6 +12,8 @@ from PIL import Image, ImageOps
 SIZES = ["1024x1024", "1344x768", "1280x832", "1152x896", "896x1152", "832x1280", "768x1344"]
 TASKS = {"Image generation": "generate", "Image-to-image (experimental)": "img2img",
          "Relative depth": "depth", "Restore / upscale": "restore"}
+from depth_lab import DEPTH_TASKS,add_depth_args,validate_depth_args
+TASKS.update(DEPTH_TASKS)
 
 
 def build_parser():
@@ -39,7 +41,7 @@ def build_parser():
     parser.add_argument("--text_encoder_device", choices=["cuda", "cpu"], default="cuda")
     parser.add_argument("--model_path", help="Local task-specific INT8 folder or parent containing depth/upscaler")
     parser.add_argument("--text_encoder_path")
-    return parser
+    return add_depth_args(parser)
 
 
 def validate_args(args):
@@ -54,7 +56,7 @@ def validate_args(args):
     if args.task in ("generate", "img2img") and not args.prompt.strip():
         raise ValueError("Write an image prompt")
     if args.task != "generate" and (args.input is None or not args.input.is_file()):
-        raise ValueError("Choose an existing input image")
+        raise ValueError('Choose an existing input video' if args.task=='parallax_video' else 'Choose an existing input image')
     if args.turbo and (args.task != "generate" or args.guidance != 1 or args.negative_prompt.strip()):
         raise ValueError("Turbo is for text-to-image only, with guidance 1 and no negative prompt")
     if args.task == "img2img" and (not math.isfinite(args.strength) or not 0 < args.strength <= 1):
@@ -63,6 +65,7 @@ def validate_args(args):
         raise ValueError("Depth max side must be at least 16, or 0 for native resolution")
     if args.task in ("depth", "restore") and args.num_samples != 1:
         raise ValueError("Depth and restoration process one input image per run")
+    validate_depth_args(args)
     return args
 
 
@@ -74,12 +77,22 @@ def main(argv=None):
     except ValueError as exc:
         parser.error(str(exc))
     source = None
-    if args.task != "generate":
+    if args.task=='parallax_video':
+        from visual_anagrams.video_parallax import probe_video,validate_video_info
+        try:
+            source=probe_video(args.input)
+            validate_video_info(args,source)
+        except ValueError as exc:parser.error(str(exc))
+    elif args.task != "generate":
         try:
             with Image.open(args.input) as image:
                 source = ImageOps.exif_transpose(image).convert("RGB")
         except (OSError, ValueError) as exc:
             parser.error(f"Cannot open input image: {exc}")
+    if args.task in DEPTH_TASKS.values():
+        from depth_lab import run_depth_task
+        run_depth_task(args,source)
+        return
     import torch
     from visual_anagrams.iris import CODE_REVISION, MODEL_ID, MODEL_REVISION, TEXT_ID, TEXT_REVISION
 
